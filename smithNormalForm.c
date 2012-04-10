@@ -29,6 +29,7 @@
 
 TO DO:
 - write function to multiply matrices and test automatically the following:
+	- put matrix in Smith normal form
 	- whether PAQ = diag
 	- whether Q*Qinv = Qinv*Q = I_M
 	- whether P*Pinv = Pinv*P = I_N
@@ -79,13 +80,14 @@ void updateFinishedColumns(int (*)[M], int (*));
 int dividesRowAndCol(int (*)[M], int, int);
 int eucDiv(int, int);
 int min(int, int);
+int checkSmith(int (*)[]);
 
 void findLeastEntry(int (*)[M], int (*), int (*), int *, int *, int *);
 void findLeastEntry2(int (*)[M], int *, int *, int);
 
 main() {
 	M = 2; //initialize M, # columns
-	N = 3; //initialize N, # rows
+	N = 2; //initialize N, # rows
 	int A[N][M]; // matrix to diagonalize
 	int P[N][N];
 	int Pinv[N][N];
@@ -133,7 +135,7 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 	int divides, allEntriesPos, smith;  // 1 is true, 0 is false
 	int tempRowEntry, tempColEntry, tempMult, tempEntry;
 	int diag = 0;
-	int counter = 0;
+	int counter;
 	
 	// for finishedRows and finishedColumns,
 	// set entry i to -1 if row/col i is not finished, or
@@ -246,6 +248,7 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 	/* perform type 3 operations to order the 
 	   non-zero elements onto the diagonals
 	*/
+	counter = 0;
 	while(counter < min(N, M)) {
 		tempM = -1;
 		tempN = -1;
@@ -254,34 +257,50 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 		//print2ArrayM(A, N);
 
 		findLeastEntry2(A, &tempN, &tempM, counter);
-		rowOperations3(A, P, Pinv, tempN, counter);
-		columnOperations3(A, Q, Qinv, tempM, counter);
-
+		if (tempN != counter || tempM != counter) {
+			rowOperations3(A, P, Pinv, tempN, counter);
+			columnOperations3(A, Q, Qinv, tempM, counter);
+		}
 		++counter;
 	}
 
-	smith = 1;
-	for(n = 0; n < min(N, M) - 1; ++n) {
-		if (A[n+1][n+1] % A[n][n] != 0) {
-			smith = 0;
-			break;
-		}
-	}
+	smith = checkSmith(A);
+	smith = -1;
+	while(smith != -1) {
+		/* write something that takes a_n, a_n+1 and transforms
+		   it into gcd(a_n, a_n+1) and lcm(a_n, a_n+1) */
 
-	while(smith == 0) {
-		//
-		smith = 1;
-		for(n = 0; n < min(N, M) - 1; ++n) {
-			if (A[n+1][n+1] % A[n][n] != 0) {
-				//smith = 0;
-				break;
+		// this loop ensures all entries are ordered
+		counter = 0;
+		while(counter < min(N, M)) {
+			tempM = -1;
+			tempN = -1;
+			findLeastEntry2(A, &tempN, &tempM, counter);
+			if (tempN != counter || tempM != counter) {
+				rowOperations3(A, P, Pinv, tempN, counter);
+				columnOperations3(A, Q, Qinv, tempM, counter);
 			}
+			++counter;
 		}
+		smith = checkSmith(A);
 	}
 
 	// computation trick: transpose Q and Pinv so they are correct
 	transposeM(Q);
 	transposeN(Pinv);
+}
+
+//returns first n where A[n+1][n+1] % A[n][n] != 0. 0 if in smith form
+int checkSmith(int A[][M]) {
+	int smith = -1;
+	int n;
+	for(n = 0; n < min(N, M) - 1; ++n) {
+		if (A[n+1][n+1] % A[n][n] != 0) {
+			smith = n;
+			break;
+		}
+	}
+	return smith;
 }
 
 int min(int a, int b) {
@@ -478,7 +497,7 @@ void initializeA(int A[][M]) {
 	int n, m;
 	for(n = 0; n < N; ++n) {
 		for(m = 0; m < M; ++m) {
-			A[n][m]=(rand()%100);
+			A[n][m]=(rand()%200);
 		}
 	}
 }
