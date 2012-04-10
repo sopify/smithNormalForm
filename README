@@ -1,6 +1,8 @@
 README
 
-This program takes a matrix over the integers and transforms it into its Smith Normal Form, a.k.a. Invariant Factor Form. Smith Form for matrices over the integers is useful when studying the structure of finitely-generated abelian groups, or solving linear equations over the integers.
+This program takes a matrix over the integers and transforms it into its Smith normal form, a.k.a. invariant factor form. Smith form for matrices over the integers is useful when studying the structure of finitely-generated abelian groups, or solving linear equations over the integers.
+
+Currently, the program diagonalizes a matrix, with diagonal elements all positive, ordered by size. However, I still need to implement a Euclidean algorithm to transform the diagonal terms into Smith form, i.e. a_i divides a_i+1
 
 To execute,
 1) cd to the directory you save the file in
