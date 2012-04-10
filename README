@@ -1,0 +1,8 @@
+README
+
+This program takes a matrix over the integers and transforms it into its Smith Normal Form, a.k.a. Invariant Factor Form. Smith Form for matrices over the integers is useful when studying the structure of finitely-generated abelian groups, or solving linear equations over the integers.
+
+To execute,
+1) cd to the directory you save the file in
+2) $ gcc smithNormalForm.c
+3) $ ./a.out
