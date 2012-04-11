@@ -1,5 +1,9 @@
 #include <stdio.h>
 
+/*
+@author: Christian Drappi
+*/
+
 /* STATUS AS OF 3:30 AM, MONDAY APRIL 9:
 - dividesRowAndCol produces "Floating point exception"
 - both branches of divides calls a division by zero
@@ -33,6 +37,21 @@ TO DO:
 	- whether PAQ = diag
 	- whether Q*Qinv = Qinv*Q = I_M
 	- whether P*Pinv = Pinv*P = I_N
+*/
+
+/* STATUS AS OF 3:34 AM, WEDNESDAY, APRIL 11:
+	- matrix now is put in Smith form :)
+
+TO DO:
+	write matrix multiplications for:
+		- NxN * NxM (P*A)
+		- NxM * MxM (PA*Q)
+		- NxN * NxN (P*Pinv, Pinv*P)
+		- MxM * MxM (Q*Qinv, Qinv*Q)
+	write testEquals for:
+		- NxM
+		- MxM
+		- NxN
 */
 
 
@@ -73,6 +92,7 @@ void printArray(int (*), int);
 
 int contains(int(*), int, int);
 int done(int (*), int(*), int, int);
+void makeAllDiagsPositive(int (*)[M], int (*)[N], int (*)[N]);
 
 void updateFinishedRows(int (*)[M], int (*));
 void updateFinishedColumns(int (*)[M], int (*));
@@ -80,33 +100,43 @@ void updateFinishedColumns(int (*)[M], int (*));
 int dividesRowAndCol(int (*)[M], int, int);
 int eucDiv(int, int);
 int min(int, int);
+
 int checkSmith(int (*)[]);
+void smithTransform(int (*)[N], int (*)[N], int (*)[N], int(*)[M], int(*)[M], int);
+void orderDiagonals(int (*)[N], int (*)[N], int (*)[N], int(*)[M], int(*)[M]);
 
 void findLeastEntry(int (*)[M], int (*), int (*), int *, int *, int *);
 void findLeastEntry2(int (*)[M], int *, int *, int);
 
 main() {
-	M = 2; //initialize M, # columns
-	N = 2; //initialize N, # rows
+	M = 3; //initialize M, # columns
+	N = 3; //initialize N, # rows
 	int A[N][M]; // matrix to diagonalize
 	int P[N][N];
 	int Pinv[N][N];
 	int Q[M][M];
 	int Qinv[M][M];
-	// A[0][0] = 2;
-	// A[0][1] = -1;
-	// A[1][0] = 3;
-	// A[1][1] = 1;
-	// A[2][0] = 1;
-	// A[2][1] = 7;
+
+	// A[0][0] = 10;
+	// A[0][1] = 0;
+	// A[0][2] = 0;
+	
+	// A[1][0] = 0;
+	// A[1][1] = 6;
+	// A[1][2] = 0;
+	
+	// A[2][0] = 0;
+	// A[2][1] = 0;
+	// A[2][2] = 2;
 
 	initializeA(A);
+	
 	initializeP(P); // initialized to identity
 	initializeP(Pinv);
 	initializeQ(Q); // intiialized to identity
 	initializeQ(Qinv);
 
-	printf("A: ");
+	printf("\nA: ");
 	print2ArrayM(A, N);
 
 	leastEntryAlgo(A, P, Pinv, Q, Qinv);
@@ -114,19 +144,27 @@ main() {
 	printf("diag: ");
 	print2ArrayM(A, N);
 
-	printf("P: ");
-	print2ArrayN(P, N);
+	// printf("P: ");
+	// print2ArrayN(P, N);
 
-	printf("Q: ");
-	print2ArrayM(Q, M);
+	// printf("Q: ");
+	// print2ArrayM(Q, M);
 
-	printf("Pinv: ");
-	print2ArrayN(Pinv, N);
+	// printf("Pinv: ");
+	// print2ArrayN(Pinv, N);
 	
-	printf("Qinv: ");
-	print2ArrayM(Qinv, M);
+	// printf("Qinv: ");
+	// print2ArrayM(Qinv, M);
 }
 
+void initializeA(int A[][M]) {
+	int n, m;
+	for(n = 0; n < N; ++n) {
+		for(m = 0; m < M; ++m) {
+			A[n][m]=(rand()%10);
+		}
+	}
+}
 
 void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[][M]) {
 	int n, m; // used in for loops
@@ -135,7 +173,6 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 	int divides, allEntriesPos, smith;  // 1 is true, 0 is false
 	int tempRowEntry, tempColEntry, tempMult, tempEntry;
 	int diag = 0;
-	int counter;
 	
 	// for finishedRows and finishedColumns,
 	// set entry i to -1 if row/col i is not finished, or
@@ -229,7 +266,7 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 		updateFinishedRows(A, finishedRows);
 		updateFinishedColumns(A, finishedColumns);
 		finished = done(finishedRows, finishedColumns, N, M);
-		//++counter;
+
 		//printf("finished: %i\n", finished);
 		//print2ArrayM(A, N);
 
@@ -237,70 +274,67 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 
 	/* if any entries are negative at this point,
 	   multiply whole row by -1 */
-	for(n = 0; n < N; ++n) {
-		for(m = 0; m < M; ++m) {
-			if(A[n][m] < 0) {
-				rowOperations1(A, P, Pinv, n, -1);
-			}
-		}
-	}
+	makeAllDiagsPositive(A, P, Pinv);
 
 	/* perform type 3 operations to order the 
 	   non-zero elements onto the diagonals
 	*/
-	counter = 0;
-	while(counter < min(N, M)) {
-		tempM = -1;
-		tempN = -1;
-
-		//printf("\ncounter: %i", counter);
-		//print2ArrayM(A, N);
-
-		findLeastEntry2(A, &tempN, &tempM, counter);
-		if (tempN != counter || tempM != counter) {
-			rowOperations3(A, P, Pinv, tempN, counter);
-			columnOperations3(A, Q, Qinv, tempM, counter);
-		}
-		++counter;
-	}
+	orderDiagonals(A, P, Pinv, Q, Qinv);
 
 	smith = checkSmith(A);
-	smith = -1;
 	while(smith != -1) {
 		/* write something that takes a_n, a_n+1 and transforms
 		   it into gcd(a_n, a_n+1) and lcm(a_n, a_n+1) */
-
-		// this loop ensures all entries are ordered
-		counter = 0;
-		while(counter < min(N, M)) {
-			tempM = -1;
-			tempN = -1;
-			findLeastEntry2(A, &tempN, &tempM, counter);
-			if (tempN != counter || tempM != counter) {
-				rowOperations3(A, P, Pinv, tempN, counter);
-				columnOperations3(A, Q, Qinv, tempM, counter);
-			}
-			++counter;
-		}
+		smithTransform(A, P, Pinv, Q, Qinv, smith);
+		// this call ensures all entries are ordered
+		orderDiagonals(A, P, Pinv, Q, Qinv);
 		smith = checkSmith(A);
 	}
+
+	// once again, ensure all diagonal elements are positive
+	makeAllDiagsPositive(A, P, Pinv);
 
 	// computation trick: transpose Q and Pinv so they are correct
 	transposeM(Q);
 	transposeN(Pinv);
 }
 
-//returns first n where A[n+1][n+1] % A[n][n] != 0. 0 if in smith form
-int checkSmith(int A[][M]) {
-	int smith = -1;
-	int n;
-	for(n = 0; n < min(N, M) - 1; ++n) {
-		if (A[n+1][n+1] % A[n][n] != 0) {
-			smith = n;
-			break;
+//initializes P to identity
+void initializeP(int P[][N]) {
+	int i, j;
+	for(i = 0; i < N; ++i) {
+		for(j = 0; j < N; ++j) {
+			if (i == j) {
+				P[i][j] = 1;
+			}
+			else {
+				P[i][j] = 0;
+			}
 		}
 	}
-	return smith;
+}
+
+// initializes Q to identity
+void initializeQ(int Q[][M]) {
+	int i, j;
+	for(i = 0; i < M; ++i) {
+		for(j = 0; j < M; ++j) {
+			if (i == j) {
+				Q[i][j] = 1;
+			}
+			else {
+				Q[i][j] = 0;
+			}
+		}
+	}
+}
+
+//returns absolute value of an integer
+int absolu(int x) {
+	if (x < 0) {
+		x = -1*x;
+	}
+	return x;
 }
 
 int min(int a, int b) {
@@ -491,54 +525,6 @@ void print2ArrayN(int A[][N], int len) {
 		printf("\n");
 	}
 	printf("\n");
-}
-
-void initializeA(int A[][M]) {
-	int n, m;
-	for(n = 0; n < N; ++n) {
-		for(m = 0; m < M; ++m) {
-			A[n][m]=(rand()%200);
-		}
-	}
-}
-
-
-//initializes P to identity
-void initializeP(int P[][N]) {
-	int i, j;
-	for(i = 0; i < N; ++i) {
-		for(j = 0; j < N; ++j) {
-			if (i == j) {
-				P[i][j] = 1;
-			}
-			else {
-				P[i][j] = 0;
-			}
-		}
-	}
-}
-
-// initializes Q to identity
-void initializeQ(int Q[][M]) {
-	int i, j;
-	for(i = 0; i < M; ++i) {
-		for(j = 0; j < M; ++j) {
-			if (i == j) {
-				Q[i][j] = 1;
-			}
-			else {
-				Q[i][j] = 0;
-			}
-		}
-	}
-}
-
-//returns absolute value of an integer
-int absolu(int x) {
-	if (x < 0) {
-		x = -1*x;
-	}
-	return x;
 }
 
 // returns 1 if x is in A, 0 if x is not in A
@@ -771,4 +757,65 @@ void columnOperations3(int A[][M], int Q[][M], int Qinv[][M], int col1, int col2
 		type3col(Q, M, col1, col2);
 		type3col(Qinv, M, col1, col2);
 	}
+}
+
+void smithTransform(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[][M], int pos) {
+	int tempMult;
+	columnOperations2(A, Q, Qinv, pos, pos + 1, -1);
+
+	while (A[pos+1][pos] != 0) {
+		tempMult = eucDiv(A[pos+1][pos], A[pos][pos]);
+		
+		// runs Euclidean division
+		rowOperations2(A, P, Pinv, pos+1, pos, tempMult);
+		
+		// makes A[pos][pos] entry larger than A[pos][pos+1]
+		if (A[pos+1][pos] != 0) { 
+			rowOperations3(A, P, Pinv, pos, pos+1);
+		}
+	}
+	tempMult = eucDiv(A[pos][pos+1], A[pos][pos]);
+	columnOperations2(A, Q, Qinv, pos+1, pos, tempMult);
+	if (A[pos][pos+1] != 0) {
+		printf("smithTransform failed. This should never happen");
+	}
+}
+
+void makeAllDiagsPositive(int A[][M], int P[][N], int Pinv[][N]) {
+	int n, m;
+	for(n = 0; n < N; ++n) {
+		for(m = 0; m < M; ++m) {
+			if(A[n][m] < 0) {
+				rowOperations1(A, P, Pinv, n, -1);
+			}
+		}
+	}
+}
+
+void orderDiagonals(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[][M]) {
+	int counter = 0;
+	int tempM, tempN;
+	while(counter < min(N, M)) {
+		tempM = -1;
+		tempN = -1;
+		findLeastEntry2(A, &tempN, &tempM, counter);
+		if (tempN != counter || tempM != counter) {
+			rowOperations3(A, P, Pinv, tempN, counter);
+			columnOperations3(A, Q, Qinv, tempM, counter);
+		}
+		++counter;
+	}
+}
+
+//returns first n where A[n+1][n+1] % A[n][n] != 0. 0 if in smith form
+int checkSmith(int A[][M]) {
+	int smith = -1;
+	int n;
+	for(n = 0; n < min(N, M) - 1; ++n) {
+		if (A[n+1][n+1] % A[n][n] != 0) {
+			smith = n;
+			break;
+		}
+	}
+	return smith;
 }
