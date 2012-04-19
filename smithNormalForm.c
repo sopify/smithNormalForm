@@ -41,27 +41,45 @@ TO DO:
 
 /* STATUS AS OF 3:34 AM, WEDNESDAY, APRIL 11:
 	- matrix now is put in Smith form :)
+*/
 
+/* STATUS AS OF 3:24 AM, THURSDAY, APRIL 19:
+	- User can initialize A from terminal
+	- wrote matrix multiplications for:
+		- NxN * N (P*b = Pb)
+		- MxM * M (Q*y = x)
+		- NxM * M (A*x = b)
+	- wrote initialize A, initialize b methods for user input from Terminal
+	- wrote correct (I think?) Ax = b solver
+	- wrote matrix multiplications to verify calculations
+
+/*
 TO DO:
-	write matrix multiplications for:
-		- NxN * NxM (P*A)
-		- NxM * MxM (PA*Q)
-		- NxN * NxN (P*Pinv, Pinv*P)
-		- MxM * MxM (Q*Qinv, Qinv*Q)
-	write testEquals for:
-		- NxM
-		- MxM
-		- NxN
+	- smooth out printing in cases of N == 1 || M == 1
 */
 
 
-int M, N;
+int M, N, rank, consistent;
 
 void leastEntryAlgo(int (*)[M], int (*)[N], int (*)[N], int (*)[M], int (*)[M]);
 
-void initializeA(int (*)[M]);
+void initializeSize(int *, char (*));
+void initializeA(int (*)[M], int (*)[M]);
 void initializeP(int (*)[N]);
 void initializeQ(int (*)[M]);
+void initializeb(int (*));
+
+void matxvecN(int (*)[N], int (*), int (*));
+void matxvecM(int (*)[M], int (*), int (*));
+void matxvecNM(int (*)[M], int (*), int (*));
+
+void matNNxmatNN(int (*)[N], int (*)[N], int (*)[N]);
+void matMMxmatMM(int (*)[M], int (*)[M], int (*)[M]);
+
+void matNNxmatNM(int (*)[N], int (*)[M], int (*)[M]);
+void matNMxmatMM(int (*)[M], int (*)[M], int (*)[M]);
+
+void calcy(int (*)[N], int (*), int (*));
 
 void type1rowM(int (*)[M], int, int);
 void type2rowM(int (*)[M], int, int, int);
@@ -101,7 +119,9 @@ int dividesRowAndCol(int (*)[M], int, int);
 int eucDiv(int, int);
 int min(int, int);
 
-int checkSmith(int (*)[]);
+int checkSmith(int (*)[M]);
+int getRank(int (*)[M]);
+
 void smithTransform(int (*)[N], int (*)[N], int (*)[N], int(*)[M], int(*)[M], int);
 void orderDiagonals(int (*)[N], int (*)[N], int (*)[N], int(*)[M], int(*)[M]);
 
@@ -109,28 +129,56 @@ void findLeastEntry(int (*)[M], int (*), int (*), int *, int *, int *);
 void findLeastEntry2(int (*)[M], int *, int *, int);
 
 main() {
-	M = 3; //initialize M, # columns
-	N = 3; //initialize N, # rows
+	// M = 3; //initialize M, # columns
+	// N = 3; //initialize N, # rows
+	initializeSize(&N, "row");
+	initializeSize(&M, "column");
 	int A[N][M]; // matrix to diagonalize
 	int P[N][N];
 	int Pinv[N][N];
 	int Q[M][M];
 	int Qinv[M][M];
+	int b[N];
+	int x[M];
+	int y[M];
+	int Pb[N];
+	int testB[N];
+	int Acopy[N][M];
+	int PAtest[N][N];
+	int diagTest[M][N];
+	int PPinvTest[N][N];
+	int QQinvTest[M][M];
 
-	// A[0][0] = 10;
-	// A[0][1] = 0;
-	// A[0][2] = 0;
+	// A[0][0] = 12;
+	// A[0][1] = 9;
+	// A[0][2] = 12;
 	
-	// A[1][0] = 0;
-	// A[1][1] = 6;
-	// A[1][2] = 0;
+	// A[1][0] = 3;
+	// A[1][1] = 2;
+	// A[1][2] = 4;
 	
-	// A[2][0] = 0;
-	// A[2][1] = 0;
-	// A[2][2] = 2;
+	// A[2][0] = 12;
+	// A[2][1] = 8;
+	// A[2][2] = 22;
 
-	initializeA(A);
+	// Acopy[0][0] = 12;
+	// Acopy[0][1] = 9;
+	// Acopy[0][2] = 12;
 	
+	// Acopy[1][0] = 3;
+	// Acopy[1][1] = 2;
+	// Acopy[1][2] = 4;
+	
+	// Acopy[2][0] = 12;
+	// Acopy[2][1] = 8;
+	// Acopy[2][2] = 22;
+
+	// b[0] = 6;
+	// b[1] = 5;
+	// b[2] = 26;
+
+	initializeA(A, Acopy);
+	initializeb(b);
 	initializeP(P); // initialized to identity
 	initializeP(Pinv);
 	initializeQ(Q); // intiialized to identity
@@ -140,9 +188,56 @@ main() {
 	print2ArrayM(A, N);
 
 	leastEntryAlgo(A, P, Pinv, Q, Qinv);
-	
+	matxvecN(P, b, Pb);
+
 	printf("diag: ");
 	print2ArrayM(A, N);
+
+	printf("\nP: ");
+	print2ArrayN(P, N);
+
+	printf("Q: ");
+	print2ArrayM(Q, M);
+
+	matNNxmatNM(P, Acopy, PAtest);
+	matNMxmatMM(PAtest, Q, diagTest);
+	printf("diagTest: ");
+	print2ArrayM(diagTest, N);
+
+
+	printf("Pb = ");
+	printArray(Pb, N);
+
+	calcy(A, Pb, y);
+	printf("y = ");
+	printArray(y, M);
+
+	// matNNxmatNN(P, Pinv, PPinvTest);
+	// printf("PPinvTest: ");
+	// print2ArrayM(PPinvTest, N);
+
+	// matNNxmatNN(Q, Qinv, QQinvTest);
+	// printf("QQinvTest: ");
+	// print2ArrayM(QQinvTest, M);
+
+	if (consistent == 1) {
+		matxvecM(Q, y, x);
+
+		printf("Solution: x = ");
+		printArray(x, M);
+
+		matxvecNM(Acopy, x, testB);
+		
+		printf("Testing solution: b = ");
+		printArray(b, N);
+printf
+		("Testing solution: testB = ");
+		printArray(testB, N);
+	}
+
+	
+	// printf("diag: ");
+	// print2ArrayM(A, N);
 
 	// printf("P: ");
 	// print2ArrayN(P, N);
@@ -157,11 +252,52 @@ main() {
 	// print2ArrayM(Qinv, M);
 }
 
-void initializeA(int A[][M]) {
-	int n, m;
+void initializeSize(int *size, char type[]) {
+	int num;
+	printf("Please enter the amount of %ss in your matrix: ", type);
+	scanf("%d", &num);
+	*size = num;
+}
+
+void initializeA(int A[][M], int Acopy[][M]) {
+	int n, m, temp;
+	printf("Initialize the matrix \"A\".\n");
 	for(n = 0; n < N; ++n) {
 		for(m = 0; m < M; ++m) {
-			A[n][m]=(rand()%10);
+			printf("A[%d][%d] = ", n, m);
+			scanf("%d", &temp);
+			A[n][m] = temp;
+			Acopy[n][m] = temp;
+		}
+	}
+}
+
+void initializeb(int b[]) {
+	printf("Initialize the vector \"b\".\n");
+	int n, temp;
+	for(n = 0; n < N; ++n) {
+		printf("b[%d] = ", n);
+		scanf("%d", &temp);
+		b[n] = temp;
+	}
+}
+
+void calcy(int A[][M], int vec[], int y[]) {
+	int m, n = 0;
+	consistent = 1;
+	for(m = 0; m < M; ++m) {
+		if (m >= rank) {
+			y[m] = 0;
+		}
+		else {
+			if (vec[m] % A[m][m] == 0) {
+				y[m] = vec[m] / A[m][m];
+			}
+			else {
+				printf("This system is not consistent\n");
+				consistent = 0;
+				break;
+			}
 		}
 	}
 }
@@ -272,6 +408,8 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 
 	}
 
+	rank = getRank(A);
+
 	/* if any entries are negative at this point,
 	   multiply whole row by -1 */
 	makeAllDiagsPositive(A, P, Pinv);
@@ -290,12 +428,12 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 		orderDiagonals(A, P, Pinv, Q, Qinv);
 		smith = checkSmith(A);
 	}
-
+	print2ArrayM(A, N);
 	// once again, ensure all diagonal elements are positive
 	makeAllDiagsPositive(A, P, Pinv);
 
 	// computation trick: transpose Q and Pinv so they are correct
-	transposeM(Q);
+	transposeM(Qinv);
 	transposeN(Pinv);
 }
 
@@ -688,39 +826,43 @@ void findLeastEntry2(int A[][M], int *tempN, int *tempM, int counter) {
 	int m, n;
 	int tempMin = -1;
 	int boole = 0;
-
-	for(n = counter; n < N; ++n) {
-		for(m = counter; m < M; ++m) {
-			if(A[n][m] != 0) {
-				*tempN = n;
-				*tempM = m;
-				tempMin = absolu(A[n][m]);
-				boole = 1;
-				break;
-			}
-			if (boole == 1) {
-				break;
-			}
-		}
-	}
-	if (tempMin == -1) {
-		printf("This should not execute.\n");
-		return;
-	}
-
-	for(n = counter; n < N; ++n) {
-		for (m = counter; m < M; ++m) {
-			if (A[n][m] != 0) {
-				if(A[n][m] < tempMin) {
+	// if (counter >= rank) {
+	// 	return;
+	// }
+	// else {
+		for(n = counter; n < N; ++n) {
+			for(m = counter; m < M; ++m) {
+				if(A[n][m] != 0) {
 					*tempN = n;
 					*tempM = m;
-					tempMin = A[n][m];
+					tempMin = absolu(A[n][m]);
+					boole = 1;
+					break;
+				}
+				if (boole == 1) {
+					break;
 				}
 			}
 		}
-	}
+		if (tempMin == -1) {
+			printf("This should not execute Error in findLeastEntry2.\n");
+			return;
+		}
 
-	if(*tempN == -1 || *tempM == -1) { printf("tempN or tempN is equal to -1\n");}
+		for(n = counter; n < N; ++n) {
+			for (m = counter; m < M; ++m) {
+				if (A[n][m] != 0) {
+					if(A[n][m] < tempMin) {
+						*tempN = n;
+						*tempM = m;
+						tempMin = A[n][m];
+					}
+				}
+			}
+		}
+
+		if(*tempN == -1 || *tempM == -1) { printf("tempN or tempN is equal to -1\n");}
+	// }
 }
 
 void rowOperations1(int A[][M], int P[][N], int Pinv[][N], int n, int unit) {
@@ -735,12 +877,6 @@ void rowOperations2(int A[][M], int P[][N], int Pinv[][N], int n, int tempN, int
 	type2rowN(Pinv, tempN, n, tempMult);
 }
 
-void columnOperations2(int A[][M], int Q[][M], int Qinv[][M], int m, int tempM, int tempMult) {
-	type2col(A, N, m, tempM, -1*tempMult);
-	type2col(Q, M, tempM, m, -1*tempMult);
-	type2col(Qinv, M, m, tempM, tempMult);
-}
-
 void rowOperations3(int A[][M], int P[][N], int Pinv[][N], int row1, int row2) {
 	if (row1 != row2) {
 		// row2 < min(N, M) && row1 < min(N, M) && 
@@ -748,6 +884,12 @@ void rowOperations3(int A[][M], int P[][N], int Pinv[][N], int row1, int row2) {
 		type3rowN(P, row1, row2);
 		type3rowN(Pinv, row1, row2);
 	}
+}
+
+void columnOperations2(int A[][M], int Q[][M], int Qinv[][M], int m, int tempM, int tempMult) {
+	type2col(A, N, m, tempM, -1*tempMult);
+	type2col(Q, M, m, tempM, -1*tempMult);
+	type2col(Qinv, M, tempM, m, tempMult);
 }
 
 void columnOperations3(int A[][M], int Q[][M], int Qinv[][M], int col1, int col2) {
@@ -795,7 +937,7 @@ void makeAllDiagsPositive(int A[][M], int P[][N], int Pinv[][N]) {
 void orderDiagonals(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[][M]) {
 	int counter = 0;
 	int tempM, tempN;
-	while(counter < min(N, M)) {
+	while(counter < rank) {
 		tempM = -1;
 		tempN = -1;
 		findLeastEntry2(A, &tempN, &tempM, counter);
@@ -811,11 +953,112 @@ void orderDiagonals(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 int checkSmith(int A[][M]) {
 	int smith = -1;
 	int n;
-	for(n = 0; n < min(N, M) - 1; ++n) {
+	for(n = 0; n < rank - 1; ++n) {
 		if (A[n+1][n+1] % A[n][n] != 0) {
 			smith = n;
 			break;
 		}
 	}
 	return smith;
+}
+
+// calculates the rank of a diagonal matrix
+int getRank(int A[][M]) {
+	int rank = 0;
+	int n, m;
+	for (n = 0; n < N; ++n) {
+		for(m = 0; m < M; ++m) {
+			if (A[n][m] != 0) {
+				++rank;
+			}
+		}
+	}
+	return rank;
+}
+
+void matxvecN(int P[][N], int b[], int vec[]) {
+	int i, j, temp;
+	for(i = 0; i < N; ++i) {
+		temp = 0;
+		for(j = 0; j < N; ++j) {
+			temp += P[i][j]*b[j];
+		}
+		vec[i] = temp;
+
+	}
+}
+
+void matxvecM(int Q[][M], int y[], int vec[]) {
+	int i, j, temp;
+	for(i = 0; i < M; ++i) {
+		temp = 0;
+		for(j = 0; j < M; ++j) {
+			temp += Q[i][j]*y[j];
+		}
+		vec[i] = temp;
+	}
+}
+
+void matxvecNM(int A[][M], int x[], int vec[]) {
+	int n, m, temp;
+	for(n = 0; n < N; ++n) {
+		temp = 0;
+		for(m = 0; m < M; ++m) {
+			temp += A[n][m]*x[m];
+		}
+		vec[n] = temp;
+	}
+}
+
+void matNNxmatNM(int P[][N], int A[][M], int PA[][M]) {
+	int n, m, n1, temp;
+	for(n = 0; n < N; ++n) {
+		for(m = 0; m < M; ++m) {
+			temp = 0;
+			for(n1 = 0; n1 < N; ++n1) {
+				temp += P[n][n1]*A[n1][m];
+			}
+			PA[n][m] = temp;
+		}
+	}
+}
+
+void matNMxmatMM(int A[][M], int Q[][M], int AQ[][M]) {
+	int n, m, m1, temp;
+	for(n = 0; n < N; ++n) {
+		for(m = 0; m < M; ++m) {
+			temp = 0;
+			for(m1 = 0; m1 < M; ++m1) {
+				temp += A[n][m1]*Q[m1][m];
+			}
+			AQ[n][m] = temp;
+		}
+	}
+}
+
+void matNNxmatNN(int A[][N], int B[][N], int AB[][N]) {
+	int n1, n2, n, temp;
+	for(n1 = 0; n1 < N; ++n1) {
+		for(n2 = 0; n2 < N; ++n2) {
+			temp = 0;
+			for(n = 0; n < N; ++n) {
+				temp += A[n1][n]*B[n][n2];
+			}
+			AB[n1][n2] = temp;
+		}
+	}
+}
+
+
+void matMMxmatMM(int A[][M], int B[][M], int AB[][M]) {
+	int m1, m2, m, temp;
+	for(m1 = 0; m1 < M; ++m1) {
+		for(m2 = 0; m2 < M; ++m2) {
+			temp = 0;
+			for(m = 0; m < M; ++m) {
+				temp += A[m1][m]*B[m][m2];
+			}
+			AB[m1][m2] = temp;
+		}
+	}
 }
