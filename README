@@ -1,9 +1,9 @@
 README
 
-This program takes a matrix over the integers and transforms it into its Smith normal form, a.k.a. invariant factor form. Smith form for matrices over the integers is useful when studying the structure of finitely-generated abelian groups, or solving linear equations over the integers.
+This program takes a matrix over the integers and transforms it into its Smith normal form, a.k.a. invariant factor form. Smith form for matrices over the integers is useful in many applications, for example, studying the structure of finitely-generated abelian groups. The program then uses the Smith normal form to solve a system of linear diophantine equations, i.e. a linear system of equations over the integers.
 
 More on Smith form: http://en.wikipedia.org/wiki/Smith_normal_form
 
-Eventually, I will add functionality to input matrices from the Terminal, or if the user wishes, from a text file. For now, you'll have to manually type in the size and entries of the matrix.
+The next steps are to clean up more of the code, and smooth out any bugs that I might find as I toy with this more. I also plan to add a feature that can compute a list of elementary divisors using a prime factorization algoritm.
 
 I hope you enjoy!
