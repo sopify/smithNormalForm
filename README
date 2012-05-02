@@ -1,9 +1,16 @@
 README
 
-This program takes a matrix over the integers and transforms it into its Smith normal form, a.k.a. invariant factor form. Smith form for matrices over the integers is useful in many applications, for example, studying the structure of finitely-generated abelian groups. The program then uses the Smith normal form to solve a system of linear diophantine equations, i.e. a linear system of equations over the integers.
+integer folder:
+
+smithInteger.c takes a matrix over the integers, "A", and transforms it into its Smith normal form, a.k.a. invariant factor form. Smith form for matrices over the integers is useful in many applications, for example, studying the structure of finitely-generated abelian groups. The program then asks for a vector of integers, "b", and uses the Smith normal form to solve the system Ax = b of linear diophantine equations, i.e. a linear system of equations over the integers. The program will also return a list of elementary divisors of the matrix entered. If the system Ax = b corresponds to a defining system of relations for an abelian group, the program will return information about the structure of said group.
 
 More on Smith form: http://en.wikipedia.org/wiki/Smith_normal_form
 
-The next steps are to clean up more of the code, and smooth out any bugs that I might find as I toy with this more. I also plan to add a feature that can compute a list of elementary divisors using a prime factorization algoritm.
+
+polynomial folder:
+
+smithPolynomial.c takes a matrix of polynomials, "A", over the reals and diagonalizes the matrix. The convention the program uses is to make all diagonal entries monic polynomials. When using floats, there are often precision errors, which appear when the matrices or polynomials entered are very large. Sometimes the program obscures these precision errors when it makes all polynomials monic (For example, if one computes a diagonal term to be 4 + 2*x + 0.0001*x^2, it is likely that the squared term is there only because there was a precision error. The program will convert this to a monic polynomial: 40000 + 20000*x + 1*x^2, which might hide the fact that the squared term should be discarded). Therefore changing the variables "precision1" and "precision2" will make a difference.
+
+Next, the program supposes that the polynomials entered represent differential operators, and returns conditions of constraint on a system of linear differential equations A(D)*x = b if there are any (which happens only if the number of rows entered - N, is greater than the number of columns entered - M), assuming that "b" is a vector of arbitrary functions.
 
 I hope you enjoy!
