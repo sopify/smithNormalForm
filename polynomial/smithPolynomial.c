@@ -643,7 +643,7 @@ void print2ArrayM(float A[][M][maxDegree+1], int len) {
 			}
 			else if (m == M - 1) {
 				printPoly(A[n][m], 0);
-				printf(")");
+				printf("), ");
 			}
 			else {
 				printPoly(A[n][m], 0);
