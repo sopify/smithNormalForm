@@ -19,46 +19,44 @@
 
 
 main() {
+	// query the user for the size of the matrix
 	initializeSize(&N, "row");
 	initializeSize(&M, "column");
+
+	// query the user for the 
 	changeMaxDegree(&maxDegree, &maxEntry);
 
-	float A[N][M][maxDegree+1]; // matrix to diagonalize
-	float Acopy[N][M][maxDegree+1];
-	float P[N][N][maxDegree+1];
-	float Pinv[N][N][maxDegree+1];
-	float Q[M][M][maxDegree+1];
-	float Qinv[M][M][maxDegree+1];
-	float PAtest[N][M][maxDegree+1];
-	float diagTest[M][N][maxDegree+1];
-	float PPinvTest[N][N][maxDegree+1];
-	float QQinvTest[M][M][maxDegree+1];
-	float b[N][maxDegree+1];
+	// declare all of our matrices/vectors
+	float A[N][M][maxDegree+1]; // main matrix to diagonalize
+	float Acopy[N][M][maxDegree+1]; // copy of main matrix to check computation at the end
+	float P[N][N][maxDegree+1]; // P matrix for row operations
+	float Pinv[N][N][maxDegree+1]; // the inverse of P
+	float Q[M][M][maxDegree+1]; // Q matrix for column operations
+	float Qinv[M][M][maxDegree+1]; // the inverse of Q
+	float PAtest[N][M][maxDegree+1]; // temporary matrix used to compute diagTest (below)
+	float diagTest[M][N][maxDegree+1]; // computes (P*Acopy)*Q, to see if diagonalization is correct
+	float PPinvTest[N][N][maxDegree+1]; // P*Pinv; should be identity
+	float QQinvTest[M][M][maxDegree+1]; // Q*Qinv; should be identity
 
-	
-	init(A, Acopy, P, Pinv, Q, Qinv, PAtest, diagTest, PPinvTest, QQinvTest, b);
-	// initializeA(A, Acopy);
-	// initializeP(P); // initialized to identity
-	// initializeP(Pinv);
-	// initializeQ(Q); // intiialized to identity
-	// initializeQ(Qinv);
+	//initializes all matrices/vectors
+	init(A, Acopy, P, Pinv, Q, Qinv, PAtest, diagTest, PPinvTest, QQinvTest);
 
+	// prints the matrix A before we diagonalize it
 	printf("\nA: ");
 	print2ArrayM(A, N);
 
+	// transforms A --> diagonal by operating on P and Q
 	leastEntryAlgo(A, P, Pinv, Q, Qinv);
 
-	// printf("diag: ");
-	// print2ArrayM(A, N);
-
-	printAll(A, Acopy, P, Pinv, Q, Qinv, PAtest, diagTest, PPinvTest, QQinvTest, b);
+	// prints the results of leastEntryAlgo
+	printAll(A, Acopy, P, Pinv, Q, Qinv, PAtest, diagTest, PPinvTest, QQinvTest);
 }
 
 void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float Pinv[][N][maxDegree+1], float Q[][M][maxDegree+1], float Qinv[][M][maxDegree+1]) {
 	int n, m; // used in for loops over rows, columns respectively
 	int p; // used in for loops over polynomial array
 	int tempN, tempM, tempMin; //used to store temporary locations in A
-	int finished = 0; // bool to decide if loop is over
+	int finished = 0; // bool to decide if while loop is over
 	int tempRowEntry, tempColEntry, tempMult, tempEntry;
 	int diag = 0;
 	float q[maxDegree+1];
@@ -69,11 +67,6 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 	int finishedRows[N];
 	int finishedColumns[M];
 
-
-	int maxN;
-	int maxM;
-	int maxD;
-	int tempD;
 	//initializes finishedRows and finishedColumns
 	for(n = 0; n < N; ++n) {
 		finishedRows[n] = -1;
@@ -81,62 +74,48 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 	for(m = 0; m < M; ++m) {
 		finishedColumns[m] = -1;
 	}
-	// int c = 0;
+
+	// begin the least entry algorithm
 	while (finished == 0) {
 
-		// finds least non-zero entry, stores it in tempN, tempM
+		// resets tempM and tempN to -1
 		tempM = -1;
 		tempN = -1;
-		findLeastEntry(A, finishedRows, finishedColumns, &tempN, &tempM, &finished);
-		// printf("\nLeast entry: A[%i][%i] = ", tempN, tempM);
-		// printPoly(A[tempN][tempM], 1);
 
+		// finds least non-zero entry, stores it in tempN, tempM
+		findLeastEntry(A, finishedRows, finishedColumns, &tempN, &tempM, &finished);
+		
+		/* the loop should never break here; this if statement 
+		is more or less a "just in case" used when developing */
 		if(finished == 1) { break; }
 		
+		// resets tempRowEntry and tempColEntry to -1
 		tempRowEntry = -1;
 		tempColEntry = -1;
+
+		/* checks if we can do row operations. by convention established
+		   (arbitrarily) in this program, we do row oeprations when we can */
 		if(contains(finishedColumns, M, tempM) == 0) {
+
+			// finds an entry for the least entry to reduce
 			for(n = 0; n < N; ++n) {
 				if(equalsZero(A[n][tempM]) == 0 && n != tempN) {
 					tempRowEntry = n;
 					break;
 				}
 			}
+
+			/* if there is no good entry to operate on, break the loop
+			   in practice this would never happen, but convienient for dev. */
 			if (tempRowEntry == -1) { break; }
 			
-			// printf("attempts eucdiv on rows: A[%d][%d] = ", tempRowEntry, tempM);
-			// printPoly(A[tempRowEntry][tempM], 1);
-			// printf("\nA: ");
-			// print2ArrayM(A, N);
-			
+			/* sets the vector q (in the sense of a = b*q + r)
+			   so we can use it to do row operations */
 			eucDiv(A[tempRowEntry][tempM], A[tempN][tempM], q);
-			// printf("q_final: ");
-			// printPoly(q, 1);
-			// printf("operate on rows, A[%d][%d] = ", tempRowEntry, tempM);
-			// printPoly(A[tempRowEntry][tempM], 1);
-
-			maxD = -1;
-			for(n = 0; n < N; ++n) {
-				for(m = 0; m < M; ++m) {
-					tempD = degree(A[n][m]);
-					if(tempD > maxD) {
-						maxD = tempD;
-						maxN = n;
-						maxM = m;
-					}
-				}
-			}
-			// printf("Max degree pre operation: %d, A[%d][%d] = ", maxD, maxN, maxM);
-			// printPoly(A[maxN][maxM], 1);
-
 			rowOperations2(A, P, Pinv, tempRowEntry, tempN, q);
-
-			// printf("after eucdiv on rows: A[%d][%d] = ", tempRowEntry, tempM);
-			// printPoly(A[tempRowEntry][tempM], 1);
-
-			// printf("\nA: ");
-			// print2ArrayM(A, N);
 		}
+
+		// if we cannot do row operations, we do column operations
 		else {
 			for(m = 0; m < M; ++m) {
 				if(equalsZero(A[tempN][m]) == 0 && m != tempM) {
@@ -146,96 +125,33 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 			}
 			if (tempColEntry == -1) { break; }
 			
-			// printf("attempts eucdiv on cols: A[%d][%d] = ", tempN, tempColEntry);
-			// printPoly(A[tempN][tempColEntry], 1);
-			
 			eucDiv(A[tempN][tempColEntry], A[tempN][tempM], q);
-			// printf("q_final: ");
-			// printPoly(q, 1);
-			// printf("operate on cols A[%d][%d] = ", tempN, tempColEntry);
-			// printPoly(A[tempN][tempColEntry], 1);
-
-			maxD = -1;
-			for(n = 0; n < N; ++n) {
-				for(m = 0; m < M; ++m) {
-					tempD = degree(A[n][m]);
-					if(tempD > maxD) {
-						maxD = tempD;
-						maxN = n;
-						maxM = m;
-					}
-				}
-			}
-			// printf("Max degree pre operation: %d, A[%d][%d] = ", maxD, maxN, maxM);
-			// printPoly(A[maxN][maxM], 1);
-
 			columnOperations2(A, Q, Qinv, tempColEntry, tempM, q);
-
-			
-			// printf("after eucdiv on cols: A[%d][%d] = ", tempN, tempColEntry);
-			// printPoly(A[tempN][tempColEntry], 1);
-
-			// printf("\nA: ");
-			// print2ArrayM(A, N);
 		}
-		// printf("\nA: ");
-		// print2ArrayM(A, N);
-
-
-		maxD = -1;
-		for(n = 0; n < N; ++n) {
-			for(m = 0; m < M; ++m) {
-				tempD = degree(A[n][m]);
-				if(tempD > maxD) {
-					maxD = tempD;
-					maxN = n;
-					maxM = m;
-				}
-			}
-		}
-		// printf("Max degree post operation: %d, A[%d][%d] = ", maxD, maxN, maxM);
-		// printPoly(A[maxN][maxM], 1);
 
 		// updates rows and colums that are finished
 		updateFinishedRows(A, finishedRows);
 		updateFinishedColumns(A, finishedColumns);
 		finished = done(finishedRows, finishedColumns, N, M);
-
-		//printf("finished: %i\n", finished);
-		//print2ArrayM(A, N);
-		// ++c;
-
 	}
 
+	// now we can compute the rank
 	rank = getRank(A);
 
-	// /* perform type 3 operations to order the 
-	//    non-zero elements onto the diagonals
-	// */
+	/* perform type 3 operations to order the 
+	   non-zero elements onto the diagonals
+	*/
 	orderDiagonals(A, P, Pinv, Q, Qinv);
 	
-	/* make all polynomials monic */
+	// make all polynomials monic
 	makeAllMonic(A, P, Pinv);
-
-
-	// smith = checkSmith(A);
-	// while(smith != -1) {
-	// 	/* write something that takes a_n, a_n+1 and transforms
-	// 	   it into gcd(a_n, a_n+1) and lcm(a_n, a_n+1) */
-	// 	smithTransform(A, P, Pinv, Q, Qinv, smith);
-	// 	// this call ensures all entries are ordered
-	// 	orderDiagonals(A, P, Pinv, Q, Qinv);
-	// 	smith = checkSmith(A);
-	// }
-	// print2ArrayM(A, N);
-	// // once again, ensure all diagonal elements are positive
-	//makeAllMonic(A, P, Pinv);
 
 	// computation trick: transpose Q and Pinv so they are correct
 	transposeM(Qinv);
 	transposeN(Pinv);
 }
 
+// initializes N or M
 void initializeSize(int *size, char type[]) {
 	int num;
 	printf("Please enter the amount of %ss in your matrix: ", type);
@@ -243,6 +159,7 @@ void initializeSize(int *size, char type[]) {
 	*size = num;
 }
 
+// allows user to enter the degree of the polynomial's max entry
 void changeMaxDegree(int *maxDeg, int *maxEnt) {
 	int num;
 	printf("Enter the maximum degree in your matrix of polynomials: ");
@@ -252,20 +169,12 @@ void changeMaxDegree(int *maxDeg, int *maxEnt) {
 		scanf("%d", &num);
 	}
 	*maxEnt = num;
+	/* we actually set maxDegree to what the user entered times N*M,
+	   because after diagonalizing, we will have polynomials of higher degree */
 	*maxDeg = N*M*(num + 1);
 }
 
-// void matxvecDiff(float P[][N][maxDegree+1], float b[][maxDegree+1], float Pb[][][maxDegree+1]) {
-// 	int i, j;
-// 	float temp[maxDegree+1];
-// 	float temp2[maxDegree+1];
-// 	for(i = 0; i < N; ++i) {
-// 		for(j = 0; j < N; ++j) {
-// 			add(Pb[i][j], P[i][j]);
-// 		}
-// 	}
-// }
-
+// multiplies an NxN matrix by an NxM matrix; used for checking results
 void matNNxmatNM(float P[][N][maxDegree+1], float A[][M][maxDegree+1], float PA[][M][maxDegree+1]) {
 	int n, m, n1;
 	float temp[maxDegree+1];
@@ -282,6 +191,7 @@ void matNNxmatNM(float P[][N][maxDegree+1], float A[][M][maxDegree+1], float PA[
 	}
 }
 
+// multiplies an NxM matrix by an MxM matrix; used for checking results
 void matNMxmatMM(float A[][M][maxDegree+1], float Q[][M][maxDegree+1], float AQ[][M][maxDegree+1]) {
 	int n, m, m1;
 	float temp[maxDegree+1];
@@ -298,6 +208,7 @@ void matNMxmatMM(float A[][M][maxDegree+1], float Q[][M][maxDegree+1], float AQ[
 	}
 }
 
+// multiplies an NxN matrix by an NxN matrix; used for checking results
 void matNNxmatNN(float A[][N][maxDegree+1], float B[][N][maxDegree+1], float AB[][N][maxDegree+1]) {
 	int n1, n2, n;
 	float temp[maxDegree+1];
@@ -314,7 +225,7 @@ void matNNxmatNN(float A[][N][maxDegree+1], float B[][N][maxDegree+1], float AB[
 	}
 }
 
-
+// multiplies an MxM matrix by an MxM matrix; used for checking results
 void matMMxmatMM(float A[][M][maxDegree+1], float B[][M][maxDegree+1], float AB[][M][maxDegree+1]) {
 	int m1, m2, m;
 	float temp[maxDegree+1];
@@ -331,61 +242,70 @@ void matMMxmatMM(float A[][M][maxDegree+1], float B[][M][maxDegree+1], float AB[
 	}
 }
 
-
+// these operations are the ones we perform on matrices
+/* i had trouble splitting files up, but this is how
+   I would partition my functions if I did split the files up */
 /****************************MATRIX_OPERATIONS_C***********************************/
 
 void initializeA(float A[][M][maxDegree+1], float Acopy[][M][maxDegree+1]) {
 	int i, n, m;
+	float temp;
 	for(n = 0; n < N; ++n) {
 		for(m = 0; m < M; ++m) {
 			setZero(A[n][m]);
 			setZero(Acopy[n][m]);
 		}
 	}
+	int choice;
+	printf("If you would like to manually enter a matrix of polynomials, press 0. If you would like have one generated randomly, press 1: ");
+	scanf("%d", &choice);
+	while (choice != 0 && choice != 1) {
+		printf("\nPlease enter 0 (manual) or 1 (random): ");
+		scanf("%d", &choice);
+	}
 
-	// A[0][0][0] = 1;
-	// A[0][0][1] = 0;
-	// A[0][0][2] = 1;
-	// A[0][1][0] = 0;
-	// A[0][1][1] = -4;
-	// A[0][1][2] = 3;
-	// A[1][0][0] = 0;
-	// A[1][0][1] = 8;
-	// A[1][0][2] = 0;
-	// A[1][1][0] = 0;
-	// A[1][1][1] = 0;
-	// A[1][1][2] = -1;
+	if (choice == 1) {
+		float negative;
+		for(n = 0; n < N; ++n) {
+			for(m = 0; m < M; ++m) {
+				for(i = 0; i <= maxEntry; ++i) {
+					// generate a number that is either -1 or +1
+					negative = (float) (rand()%2);
+					negative = negative - 0.5;
+					negative *= 2;
 
-	float temp;
-	float negative;
-	// printf("Initialize the matrix \"A\".\n");
-	for(n = 0; n < N; ++n) {
-		for(m = 0; m < M; ++m) {
-			for(i = 0; i <= maxEntry; ++i) {
-				// printf("Enter the coefficient of x^%d in A[%d][%d]: ", i, n, m);
-				// scanf("%f", &temp);
+					// generate a random coefficient
+					temp = (float) (rand()%10);
+					temp *= negative;
 
-				//after this, negative will be either +1 or -1
-				negative = (float) (rand()%2);
-				negative = negative - 0.5;
-				negative *= 2;
+					A[n][m][i] = temp;
+					Acopy[n][m][i] = temp;
+				}
+			}
+		}
+	}
 
-				temp = (float) (rand()%5);
-				temp *= negative;
-
-				A[n][m][i] = temp;
-				Acopy[n][m][i] = temp;
+	else {
+		printf("Okay, please initialize the matrix \"A\".\n");
+		for(n = 0; n < N; ++n) {
+			for(m = 0; m < M; ++m) {
+				for(i = 0; i <= maxEntry; ++i) {
+					printf("Enter the coefficient of x^%d in A[%d][%d]: ", i, n, m);
+					scanf("%f", &temp);
+					A[n][m][i] = temp;
+					Acopy[n][m][i] = temp;
+				}
 			}
 		}
 	}
 	
 }
 
+// initializes all of the matrices/vectors
 void init(float A[][M][maxDegree+1], float Acopy[][M][maxDegree+1], float P[][N][maxDegree+1], 
 		  float Pinv[][N][maxDegree+1], float Q[][M][maxDegree+1], float Qinv[][M][maxDegree+1], 
 		  float PAtest[N][M][maxDegree+1], float diagTest[M][N][maxDegree+1], 
-		  float PPinvTest[N][N][maxDegree+1], float QQinvTest[M][M][maxDegree+1], 
-		  float b[N][maxDegree+1]) {
+		  float PPinvTest[N][N][maxDegree+1], float QQinvTest[M][M][maxDegree+1]) {
 
 	initializeA(A, Acopy);
 	initializeP(P); // initialized to identity
@@ -401,22 +321,15 @@ void init(float A[][M][maxDegree+1], float Acopy[][M][maxDegree+1], float P[][N]
 		}
 	}
 
-
 	initializeP(PPinvTest);
 	initializeQ(QQinvTest);
-	
-	for(n = 0; n < N; ++n) {
-		setZero(b[n]);
-	}
-
 }
 
 void printAll(float A[N][M][maxDegree+1], float Acopy[N][M][maxDegree+1], 
 			  float P[N][N][maxDegree+1], float Pinv[N][N][maxDegree+1], 
 			  float Q[M][M][maxDegree+1], float Qinv[M][M][maxDegree+1], 
 			  float PAtest[N][M][maxDegree+1], float diagTest[M][N][maxDegree+1], 
-			  float PPinvTest[N][N][maxDegree+1], float QQinvTest[M][M][maxDegree+1], 
-			  float b[N][maxDegree+1]) {
+			  float PPinvTest[N][N][maxDegree+1], float QQinvTest[M][M][maxDegree+1]) {
 
 	printf("diag: ");
 	print2ArrayM(A, N);
@@ -438,10 +351,6 @@ void printAll(float A[N][M][maxDegree+1], float Acopy[N][M][maxDegree+1],
 	printf("diagTest: ");
 	print2ArrayM(diagTest, N);
 
-	printf("Pb = \n");
-	printDiff(P, 0);
-	printf("\n");
-
 	matNNxmatNN(P, Pinv, PPinvTest);
 	int n1, n2;
 	for(n1 = 0; n1 < N; ++n1) {
@@ -459,11 +368,12 @@ void printAll(float A[N][M][maxDegree+1], float Acopy[N][M][maxDegree+1],
 			clearZeroes2(QQinvTest[m1][m2]);
 		}
 	}
+
 	printf("QQinvTest: ");
 	print2ArrayM(QQinvTest, M);
 
 	if (N > M) {
-		printf("Given this matrix, the following are conditions that must be satisfied so this system of differential equations is consistent:\n");
+		printf("Given this matrix, the following are conditions that must be satisfied so this system of differential equations is consistent:\n\n");
 		printDiff(P, M);
 	}
 	
@@ -510,25 +420,21 @@ int getRank(float A[][M][maxDegree+1]) {
 	return rank;
 }
 
+// shortcut for calling type 1 row operations
 void rowOperations1(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float Pinv[][N][maxDegree+1], int n, float unit) {
 	type1rowM(A, n, unit);
 	type1rowN(P, n, unit);
 	type1rowN(Pinv, n, unit);
 }
 
+// shortcut for calling type 2 row operations
 void rowOperations2(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float Pinv[][N][maxDegree+1], int n, int tempN, float q[]) {
 	type2rowM(A, n, tempN, q, 1);
 	type2rowN(P, n, tempN, q, 1);
 	type2rowN(Pinv, tempN, n, q, 0);
-
-	// int i, j;
-	// for(i = 0; i < N; ++i) {
-	// 	for(j = 0; j < M; ++j) {
-	// 		clearZeroes(A[i][j]);
-	// 	}
-	// }
 }
 
+// shortcut for calling type 3 row operations
 void rowOperations3(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float Pinv[][N][maxDegree+1], int row1, int row2) {
 	if (row1 != row2) {
 		// row2 < min(N, M) && row1 < min(N, M) && 
@@ -538,20 +444,14 @@ void rowOperations3(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 	}
 }
 
+// shortcut for calling type 2 column operations
 void columnOperations2(float A[][M][maxDegree+1], float Q[][M][maxDegree+1], float Qinv[][M][maxDegree+1], int m, int tempM, float q[]) {
 	type2col(A, N, m, tempM, q, 1);
 	type2col(Q, M, m, tempM, q, 1);
 	type2col(Qinv, M, tempM, m, q, 0);
-	
-	// to handle the floating point errors
-	// int i, j;
-	// for(i = 0; i < N; ++i) {
-	// 	for(j = 0; j < M; ++j) {
-	// 		clearZeroes(A[i][j]);
-	// 	}
-	// }
 }
 
+// shortcut for calling type 3 column operations
 void columnOperations3(float A[][M][maxDegree+1], float Q[][M][maxDegree+1], float Qinv[][M][maxDegree+1], int col1, int col2) {
 	if (col1 != col2) {
 		//col2 < min(N, M) && col1 < min(N, M) &&
@@ -575,19 +475,17 @@ void type1rowM(float A[][M][maxDegree+1], int row, float unit) {
 and transform them the same way.
 For parameters: pointers to both matrices,
 the row to add to, the row to add from,
-and the multiple of the row we are adding
+and the multiple of the row we are adding (q)
 */
 
-
 // adds mult*row addFrom to row addTo for column size M
-//transpose of this operation is flipping addTo and addFrom
-//inverse of this operation is changing mult to -1*mult
+// transpose of this operation is flipping addTo and addFrom
+// inverse of this operation is changing mult to -1*mult
 void type2rowM(float A[][M][maxDegree+1], int addTo, int addFrom, float q[], int neg) {
 	int m;
 	float temp[maxDegree+1];
 	for(m = 0; m < M; ++m) {
 		setZero(temp);
-		//printf("a = q, b = A[%d][%d], c = temp", addFrom, m);
 		multiply(q, A[addFrom][m], temp);
 		if (neg == 1) {
 			subtract(A[addTo][m], temp);
@@ -606,6 +504,7 @@ void type3rowM(float A[][M][maxDegree+1], int row1, int row2) {
 	int m, j;
 	for(m = 0; m < M; ++m) {
 		for(j = 0; j <= maxDegree; ++j) {
+			// all this nonsense does is switches the two entries without a temp ;)
 			A[row1][m][j] += A[row2][m][j];
 			A[row2][m][j] = A[row1][m][j] - A[row2][m][j];
 			A[row1][m][j] -= A[row2][m][j];
@@ -623,13 +522,12 @@ void type1rowN(float A[][N][maxDegree+1], int row, float unit) {
 }
 
 // adds mult*row addFrom to row addTo for column size M
-//transpose of this operation is flipping addTo and addFrom
-//inverse of this operation is changing mult to -1*mult
+// transpose of this operation is flipping addTo and addFrom
+// inverse of this operation is changing mult to -1*mult
 void type2rowN(float A[][N][maxDegree+1], int addTo, int addFrom, float q[], int neg) {
 	int n;
 	float temp[maxDegree+1];
 	for(n = 0; n < N; ++n) {
-		//printf("a = q, b = A[%d][%d], c = temp", addFrom, n);
 		multiply(q, A[addFrom][n], temp);
 		if (neg == 1) {
 			subtract(A[addTo][n], temp);
@@ -648,6 +546,7 @@ void type3rowN(float A[][N][maxDegree+1], int row1, int row2) {
 	int n, k;
 	for(n = 0; n < N; ++n) {
 		for(k = 0; k <= maxDegree; ++k) {
+			// all this nonsense does is switches the two entries without a temp ;)
 			A[row1][n][k] += A[row2][n][k];
 			A[row2][n][k] = A[row1][n][k] - A[row2][n][k];
 			A[row1][n][k] -= A[row2][n][k];
@@ -670,7 +569,6 @@ void type2col(float A[][M][maxDegree+1], int len, int addTo, int addFrom, float 
 	int i;
 	float temp[maxDegree+1];
 	for(i = 0; i < len; ++i) {
-		//printf("a = q, b = A[%d][%d], c = temp", i, addFrom);
 		multiply(q, A[i][addFrom], temp);
 		if (neg == 1) {
 			subtract(A[i][addTo], temp);
@@ -681,11 +579,12 @@ void type2col(float A[][M][maxDegree+1], int len, int addTo, int addFrom, float 
 	}
 }
 
-//interchanges col1 and col2
+// interchanges col1 and col2
 void type3col(float A[][M][maxDegree+1], int len, int col1, int col2) {
 	int i, j;
 	for(i = 0; i < len; ++i) {
 		for(j = 0; j <= maxDegree; ++j) {
+			// all this nonsense does is switches the two entries without a temp ;)
 			A[i][col1][j] += A[i][col2][j];
 			A[i][col2][j] = A[i][col1][j] - A[i][col2][j];
 			A[i][col1][j] -= A[i][col2][j];
@@ -699,6 +598,7 @@ void transposeN(float A[][N][maxDegree+1]) {
 	for(i = 0; i < N; ++i) {
 		for(j = i+1; j < N; ++j) {
 			for(k = 0; k <= maxDegree; ++k) {
+				// all this nonsense does is switches the two entries without a temp ;)
 				A[i][j][k] += A[j][i][k];
 				A[j][i][k] = A[i][j][k] - A[j][i][k];
 				A[i][j][k] -= A[j][i][k];
@@ -712,6 +612,7 @@ void transposeM(float A[][M][maxDegree+1]) {
 	for(i = 0; i < M; ++i) {
 		for(j = i+1; j < M; ++j) {
 			for(k = 0; k <= maxDegree; ++k) {
+				// all this nonsense does is switches the two entries without a temp ;)
 				A[i][j][k] += A[j][i][k];
 				A[j][i][k] = A[i][j][k] - A[j][i][k];
 				A[i][j][k] -= A[j][i][k];
@@ -720,6 +621,7 @@ void transposeM(float A[][M][maxDegree+1]) {
 	}
 }
 
+// prints a 2d array with M columns
 void print2ArrayM(float A[][M][maxDegree+1], int len) {
 	int m, n;
 	printf("\n");
@@ -736,7 +638,6 @@ void print2ArrayM(float A[][M][maxDegree+1], int len) {
 				printf(", "); 
 			}
 			else if (m == M - 1 && n == len - 1) {
-				//printf(",");
 				printPoly(A[n][m], 0);
 				printf("))");
 			}
@@ -754,6 +655,7 @@ void print2ArrayM(float A[][M][maxDegree+1], int len) {
 	printf("\n");
 }
 
+// prints a 2d array with N columns
 void print2ArrayN(float A[][N][maxDegree+1], int len) {
 	int m, n;
 	printf("\n");
@@ -770,7 +672,6 @@ void print2ArrayN(float A[][N][maxDegree+1], int len) {
 				printf(", "); 
 			}
 			else if (m == M - 1 && n == len - 1) {
-				//printf(",");
 				printPoly(A[n][m], 0);
 				printf("))");
 			}
@@ -788,6 +689,7 @@ void print2ArrayN(float A[][N][maxDegree+1], int len) {
 	printf("\n");
 }
 
+// prints an array of polynomials
 void printArray(float A[][maxDegree+1], int len) {
 	int i;
 	for(i = 0; i < len; ++i) {
@@ -808,6 +710,7 @@ void printArray(float A[][maxDegree+1], int len) {
 	printf("\n");
 }
 
+// prints rows of conditions for a system of ODEs to be consistent
 void printDiff(float P[][N][maxDegree+1], int start) {
 	int n;
 	for(n = start; n < N; ++n) {
@@ -815,10 +718,11 @@ void printDiff(float P[][N][maxDegree+1], int start) {
 		if (start == M) {
 			printf(" = 0");
 		}
-		printf("\n");
+		printf("\n\n");
 	}
 }
 
+// helper method for printDiff
 void printDiffRow(float p[][maxDegree+1]) {
 	int n;
 	printf("(");
@@ -827,7 +731,7 @@ void printDiffRow(float p[][maxDegree+1]) {
 			printf("(");
 			printPoly(p[n], 0);
 			printf(")");
-			printf("* f_%d", n);
+			printf("*f_%d", n);
 			if (n + 1 < N) {
 				printf(" + ");
 			}
@@ -873,7 +777,7 @@ void clearZeroes(float x[]) {
 
 void clearZeroes2(float x[]) {
 	int i;
-	for(i = 0; i <= maxDegree; ++i) {
+	for(i = 1; i <= maxDegree; ++i) {
 		if (x[i] < precision2 && x[i] > -precision2 && i != 0) {
 			x[i] = 0.0;
 		}
@@ -895,11 +799,6 @@ void subtract(float subTo[], float subFrom[]) {
 	}
 
 	clearZeroes(subTo);
-	// printf("tempA: ");
-	// printPoly(subTo);
-
-	// printf("b scaled: ");
-	// printPoly(subFrom);
 }
 
 // multiplies 2 polynomials, overwriting their product as the first argument
@@ -907,16 +806,15 @@ void subtract(float subTo[], float subFrom[]) {
 void multiply(float a[], float b[], float c[]) {
 	int i, j;
 	setZero(c);
-	// int degA = degree(a);
-	// int degB = degree(b);
-	// int d = degA + degB;
-	for (i = maxDegree; i >= 0; --i) {
+	int degA = degree(a);
+	int degB = degree(b);
+	int d = degA + degB;
+	for (i = d; i >= 0; --i) {
 		for (j = i; j >= 0; --j) {
 			c[i] += a[j] * b[i-j];
-			//printf("j = %i, i = %i, a[j] = %f, b[i-j] = %f\n", j, i, a[j], b[i-j]);
 		}
 	}
-	//clearZeroes(c);
+	clearZeroes(c);
 }
 
 int degree(float x[]) {
@@ -959,7 +857,7 @@ void setZero(float x[]) {
 	}
 }
 
-//sets arg1 equal to arg2
+// clones arg2 into the memory of arg1
 void setEquals(float x[], float y[]) {
 	int i;
 	for (i = 0; i <= maxDegree; ++i) {
@@ -967,8 +865,8 @@ void setEquals(float x[], float y[]) {
 	}
 }
 
+// takes a polynomial f(x) to x^power * f(x)
 void polyTimesXn(float a[], int power) {
-	
 	if (degree(a) + power > maxDegree) {
 		printf("deg: %d, power: %d\n", degree(a), power);
 		printf("This would create a polynomial with degree greater than the maximum degree\n");
@@ -1000,6 +898,7 @@ void polyTimesXn(float a[], int power) {
 	}
 }
 
+// prints a single polynomial
 void printPoly(float poly[], int line) {
 	int i;
 	for(i = 0; i <= maxDegree; ++i) {
@@ -1042,6 +941,7 @@ int contains(int A[], int len, int x) {
 	return ret;
 }
 
+// helper method to check if leastEntryAlgo is done
 int done(int A[], int B[], int lenA, int lenB) {
 	int i;
 	int ret = 1;
@@ -1086,6 +986,7 @@ void updateFinishedColumns(float A[][M][maxDegree+1], int finishedColumns[]) {
 	}
 }
 
+// helper method to find least entry
 void findLeastEntry(float A[][M][maxDegree+1], int finishedRows[], int finishedColumns[], int *tempN, int *tempM, int *finished) {
 	int m, n;
 	int boole = 0;
@@ -1132,93 +1033,6 @@ void findLeastEntry(float A[][M][maxDegree+1], int finishedRows[], int finishedC
 	if (*tempM == -1 || *tempN == -1) { *finished = 1; }
 }
 
-int dividesRowAndCol(float A[][M][maxDegree+1], int tempN, int tempM) {
-	int m, n;
-	int ret = 1;
-	if (equalsZero(A[tempN][tempM]) == 1) {
-		printf("You have called this with A[i][j] = the zero vector\n");
-		return 0;
-	}
-	if (tempN == -1 || tempM == -1) {
-		printf("You have called this with tempN = -1 or tempM = -1\n");
-		return 0;
-	}
-	for(n = 0; n < N; ++n) {
-		if (n != tempN) {
-			if (dividesPoly(A[n][tempM], A[tempN][tempM]) == 0) {
-				ret = 0;
-			}
-		}
-	}
-
-	for(m = 0; m < M; ++m) {
-		if (m != tempM) {
-			if (dividesPoly(A[tempN][m], A[tempN][tempM]) == 0) {
-				ret = 0;
-			}
-		}
-	}
-	return ret;
-}
-
-int dividesPoly(float a[], float b[]) {
-	int i;
-	// creates tempA as a clone of a
-	float tempA[maxDegree+1];
-	setEquals(tempA, a);
-	float tempB[maxDegree+1];
-	setEquals(tempB, b);	
-	float q[maxDegree+1];
-	setZero(q);
-
-	int degA = degree(a);
-	int degB = degree(b);
-	int d = degA - degB;
-	
-	float tempQ;
-	
-	// algorithm for euclidean division
-	for (i = d; i >= 0; --i) {
-		tempQ = tempA[degA + i - d] / tempB[degB];
-		q[i] = tempQ;
-		if (tempQ != 0) {
-			scale(tempB, tempQ);
-			polyTimesXn(tempB, i);
-			subtract(tempA, tempB);
-			polyTimesXn(tempB, -i);
-			scale(tempB, 1.0/tempQ);
-		}
-	}
-	multiply(b, q, tempA);
-	subtract(tempA, a);
-	if(equalsZero(tempA) == 1) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
-}
-
-//the input for c will be tempA from eucdiv
-// void ldMult(float b[], float q[], float c[]) {
-// 	int i, j;
-// 	for (i = maxDegree; i >= 0; --i) {
-// 		for (j = i; j >= 0; --j) {
-// 			c[i] -= b[j] * q[i-j];
-// 		}
-// 	}
-
-// 	//eliminate inevitable floating point precision related errors
-// 	clearZeroes(c);
-
-// 	// printf("b: ");
-// 	// printPoly(b);
-// 	// printf("q: ");
-// 	// printPoly(q);
-// 	// printf("tempA: ");
-// 	// printPoly(c);
-// }
-
 // sets q equal to the polynomial s.t. a = bq + r
 void eucDiv(float a[], float b[], float q[]) {
 	if (equalsZero(a) == 1) {
@@ -1230,20 +1044,9 @@ void eucDiv(float a[], float b[], float q[]) {
 		return;
 	}
 
-	// printf("a in eucdiv call: ");
-	// printPoly(a);
-
-	// printf("b in eucdiv call: ");
-	// printPoly(b);
 	int i;
-	// printf("\narg1 of eucdiv: ");
-	// printPoly(a);
-	// printf("\narg2 of eucdiv: ");
-	// printPoly(b);
 	int degA = degree(a);
 	int degB = degree(b);
-	//printf("\ndeg arg1: %d, deg arg2: %d\n", degA, degB);
-
 	int d = degA - degB;
 	if (d < 0) { 
 		printf("This is a nonsensical call of eucDiv\n");
@@ -1258,9 +1061,8 @@ void eucDiv(float a[], float b[], float q[]) {
 	setEquals(tempA, a);
 	float tempB[maxDegree+1];
 	setEquals(tempB, b);
-	// float tempPoly[maxDegree+1];
 
-	// algorithm for euclidean division
+	// algorithm for euclidean division of polynomials
 	for (i = d; i >= 0; --i) {
 		tempQ = tempA[degA + i - d] / tempB[degB];
 		q[i] = tempQ;
@@ -1274,6 +1076,7 @@ void eucDiv(float a[], float b[], float q[]) {
 	}
 }
 
+// finds least entry to order the diagonals properly
 void orderHelper(float A[][M][maxDegree+1], int *tempN, int *tempM, int counter) {
 	int m, n;
 	int tempMin = -1;
@@ -1314,7 +1117,7 @@ void orderHelper(float A[][M][maxDegree+1], int *tempN, int *tempM, int counter)
 	// }
 }
 
-
+// performs row operations and column operations to order diagonal entries by degree
 void orderDiagonals(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float Pinv[][N][maxDegree+1], float Q[][M][maxDegree+1], float Qinv[][M][maxDegree+1]) {
 	int counter = 0;
 	int tempM, tempN;

@@ -24,14 +24,12 @@ void printAll(float (*)[M][maxDegree+1], float (*)[M][maxDegree+1],
 			  float (*)[N][maxDegree+1], float (*)[N][maxDegree+1], 
 			  float (*)[M][maxDegree+1], float (*)[M][maxDegree+1], 
 			  float (*)[M][maxDegree+1], float (*)[N][maxDegree+1], 
-			  float (*)[N][maxDegree+1], float (*)[M][maxDegree+1], 
-			  float (*)[maxDegree+1]);
+			  float (*)[N][maxDegree+1], float (*)[M][maxDegree+1]);
 
 void init(float (*)[M][maxDegree+1], float (*)[M][maxDegree+1], float (*)[N][maxDegree+1], 
 		  float (*)[N][maxDegree+1], float (*)[M][maxDegree+1], float (*)[M][maxDegree+1], 
 		  float (*)[M][maxDegree+1], float (*)[N][maxDegree+1], 
-		  float (*)[N][maxDegree+1], float (*)[M][maxDegree+1], 
-		  float (*)[maxDegree+1]);
+		  float (*)[N][maxDegree+1], float (*)[M][maxDegree+1]);
 
 void initializeA(float (*)[M][maxDegree+1], float (*)[M][maxDegree+1]);
 void initializeP(float (*)[N][maxDegree+1]);
@@ -91,7 +89,6 @@ int done(int (*), int (*), int, int);
 void updateFinishedRows(float (*)[M][maxDegree+1], int (*));
 void updateFinishedColumns(float (*)[M][maxDegree+1], int (*));
 
-int dividesRowAndCol(float (*)[M][maxDegree+1], int, int);
 void eucDiv(float (*), float (*), float (*));
 
 int getRank(float (*)[M][maxDegree+1]);

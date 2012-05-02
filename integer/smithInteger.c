@@ -6,60 +6,6 @@
 @author: Christian Drappi
 */
 
-/* STATUS AS OF 3:30 AM, MONDAY APRIL 9:
-- dividesRowAndCol produces "Floating point exception"
-- both branches of divides calls a division by zero
-*/
-
-/* STATUS AS OF 1:00 PM, MONDAY APRIL 9:
-- almost works, just doesn't go through on some last steps
-*/
-
-/* STATUS AS OF 8:30 PM, MONDAY APRIL 9:
-- P, Q and Pinv, Qinv are working properly
-- leastEntryAlgo takes A to a form where there is
-	at most one non-zero entry in each row and column 
-*/
-
-/* STATUS AS OF 12:50 AM, TUESDAY APRIL 10:
-- PAQ does not multiply together to get proper diagonal matrix
-- matrix is diagonalized and diagonals are ordered from least to greatest
-- still need to put matrix in Smith normal form
-*/
-
-/* STATUS AS OF 1:08 AM, TUESDAY APRIL 10:
-- now PAQ = a diagonal matrix
-- these diagonals are ordered from least to greatest
-- still need to put matrix in Smith normal form,
-	although sometimes (usually) it happens automatically
-
-TO DO:
-- write function to multiply matrices and test automatically the following:
-	- put matrix in Smith normal form
-	- whether PAQ = diag
-	- whether Q*Qinv = Qinv*Q = I_M
-	- whether P*Pinv = Pinv*P = I_N
-*/
-
-/* STATUS AS OF 3:34 AM, WEDNESDAY, APRIL 11:
-	- matrix now is put in Smith form :)
-*/
-
-/* STATUS AS OF 3:24 AM, THURSDAY, APRIL 19:
-	- User can initialize A from terminal
-	- wrote matrix multiplications for:
-		- NxN * N (P*b = Pb)
-		- MxM * M (Q*y = x)
-		- NxM * M (A*x = b)
-	- wrote initialize A, initialize b methods for user input from Terminal
-	- wrote correct (I think?) Ax = b solver
-	- wrote matrix multiplications to verify calculations
-
-/*
-TO DO:
-	- smooth out printing in cases of N == 1 || M == 1
-*/
-
 main(int argc, char* argv[]) {
 	// M = 3; //initialize M, # columns
 	// N = 3; //initialize N, # rows
@@ -184,14 +130,43 @@ void initializeZero(int arr[], int len) {
 }
 
 void initializeA(int A[][M], int Acopy[][M]) {
-	int n, m, temp;
-	printf("Initialize the matrix \"A\".\n");
-	for(n = 0; n < N; ++n) {
-		for(m = 0; m < M; ++m) {
-			printf("A[%d][%d] = ", n, m);
-			scanf("%d", &temp);
-			A[n][m] = temp;
-			Acopy[n][m] = temp;
+	int n, m, temp, negative;
+
+	int choice;
+	printf("If you would like to manually enter a matrix of integers, press 0. If you would like have one generated randomly, press 1: ");
+	scanf("%d", &choice);
+	while (choice != 0 && choice != 1) {
+		printf("\ntry again: ");
+		scanf("%d", &choice);
+	}
+
+	if (choice == 1) {
+		for(n = 0; n < N; ++n) {
+			for(m = 0; m < M; ++m) {
+				// this transformation makes negative -1 or +1
+				negative = (rand()%2) + 1;
+				negative *= 2;
+				negative -= 3;
+
+				// temp will take on an integer on random in [-10, 10]
+				temp = (rand()%10);
+				temp *= negative;
+
+				A[n][m] = temp;
+				Acopy[n][m] = temp;
+			}
+		}
+	}
+
+	else {
+		printf("Initialize the matrix \"A\".\n");
+		for(n = 0; n < N; ++n) {
+			for(m = 0; m < M; ++m) {
+				printf("A[%d][%d] = ", n, m);
+				scanf("%d", &temp);
+				A[n][m] = temp;
+				Acopy[n][m] = temp;
+			}
 		}
 	}
 }
