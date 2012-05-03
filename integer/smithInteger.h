@@ -1,10 +1,15 @@
-int M, N, rank, consistent, numEDs;
+int M, N, rank, consistent, numEDs, choiceA, choiceB;
 int maxED = 100;
 
 void leastEntryAlgo(int (*)[M], int (*)[N], int (*)[N], int (*)[M], int (*)[M]);
 
+void printAll(int (*)[M], int (*)[M], int (*)[N], int (*)[N], 
+			  int (*)[M], int (*)[M], int (*)[M], int (*)[N], 
+			  int (*)[N], int (*)[M], int (*), int (*), 
+			  int (*), int (*), int (*), int (*), int (*));
 void initializeSize(int *, char (*));
 
+void init(int (*)[M], int (*)[M], int (*)[N], int (*)[N], int (*)[M], int (*)[M], int (*));
 void initializeA(int (*)[M], int (*)[M]);
 void initializeP(int (*)[N]);
 void initializeQ(int (*)[M]);

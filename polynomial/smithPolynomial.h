@@ -1,7 +1,7 @@
 int M, N, rank, consistent;
 int maxDegree;
 int maxEntry;
-float precision = 0.0001;
+float precision = 0.001;
 float precision2 = 0.1;
 
 void leastEntryAlgo(float (*)[M][maxDegree+1], float (*)[N][maxDegree+1], float (*)[N][maxDegree+1], float (*)[M][maxDegree+1], float (*)[M][maxDegree+1]);
@@ -59,7 +59,7 @@ void transposeM(float (*)[M][maxDegree+1]);
 
 void print2ArrayM(float (*)[M][maxDegree+1], int);
 void print2ArrayN(float (*)[N][maxDegree+1], int);
-void printArray(float (*)[maxDegree+1], int);
+void printArray(int (*), int);
 
 void printDiff(float (*)[N][maxDegree+1], int);
 void printDiffRow(float (*)[maxDegree+1]);

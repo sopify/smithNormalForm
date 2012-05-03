@@ -28,12 +28,7 @@ main(int argc, char* argv[]) {
 	int PPinvTest[N][N];
 	int QQinvTest[M][M];
 
-	initializeA(A, Acopy);
-	initializeb(b);
-	initializeP(P); // initialized to identity
-	initializeP(Pinv);
-	initializeQ(Q); // intiialized to identity
-	initializeQ(Qinv);
+	init (A, Acopy, P, Pinv, Q, Qinv, b);
 
 	printf("\nA: ");
 	print2ArrayM(A, N);
@@ -42,18 +37,29 @@ main(int argc, char* argv[]) {
 
 	int diags[rank];
 	int elementaryDivisors[maxED];
+	
+	printAll(A, Acopy, P, Pinv, Q, Qinv, PAtest, diagTest, PPinvTest, QQinvTest, b, testB, Pb, elementaryDivisors, y, x, diags);
+}
+
+void init(int A[][M], int Acopy[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[][M], int b[]) {
+	initializeA(A, Acopy);
+	initializeb(b);
+	initializeP(P); // initialized to identity
+	initializeP(Pinv);
+	initializeQ(Q); // intiialized to identity
+	initializeQ(Qinv);
+}
+
+void printAll(int A[][M], int Acopy[][M], int P[][N], int Pinv[][N], 
+			  int Q[][M], int Qinv[][M], int PAtest[][M], int diagTest[][N], 
+			  int PPinvTest[][N], int QQinvTest[][M], int b[], int testB [], 
+			  int Pb[], int elementaryDivisors[], int y[], int x[], int diags[]) {
+
 	initializeZero(elementaryDivisors, maxED);
 	
 	getDiags(A, diags);
 	getElementaryDivisors(diags, elementaryDivisors);
 	qsort(elementaryDivisors,maxED,sizeof(int),comp);
-
-	matxvecN(P, b, Pb);
-	calcy(A, Pb, y);
-
-	// test whether the matrix was correctly diagonalized
-	matNNxmatNM(P, Acopy, PAtest);
-	matNMxmatMM(PAtest, Q, diagTest);
 
 	// print diag, P, Q
 	printf("diag: ");
@@ -65,157 +71,48 @@ main(int argc, char* argv[]) {
 	printf("Q: ");
 	print2ArrayM(Q, M);
 
+	// if you want y or Pb, you can uncomment these
 	// printf("Pb = ");
 	// printArray(Pb, N);
 
 	// printf("y = ");
 	// printArray(y, M);
 
-	printf("diagTest: ");
-	print2ArrayM(diagTest, N);
-
+	// test whether the matrix was correctly diagonalized
+	matNNxmatNM(P, Acopy, PAtest);
+	matNMxmatMM(PAtest, Q, diagTest);
 	matNNxmatNN(P, Pinv, PPinvTest);
-	printf("PPinvTest: ");
-	print2ArrayM(PPinvTest, N);
-
 	matNNxmatNN(Q, Qinv, QQinvTest);
-	printf("QQinvTest: ");
-	print2ArrayM(QQinvTest, M);
 
-	if (consistent == 1) {
-		matxvecM(Q, y, x);
+	// if(reveal == 1) {
+	// 	printf("diagTest: ");
+	// 	print2ArrayM(diagTest, N);
 
-		printf("Solution: x = ");
-		printArray(x, M);
+	// 	printf("PPinvTest: ");
+	// 	print2ArrayM(PPinvTest, N);
 
-		matxvecNM(Acopy, x, testB);
-		
-		printf("Testing solution: b = ");
-		printArray(b, N);
-		printf("Testing solution: testB = ");
-		printArray(testB, N);
+	// 	printf("QQinvTest: ");
+	// 	print2ArrayM(QQinvTest, M);
+	// }
+	if (choiceB == 1) {
+		matxvecN(P, b, Pb);
+		calcy(A, Pb, y);
+		if (consistent == 1) {
+			matxvecM(Q, y, x);
+
+			printf("Solution: x = ");
+			printArray(x, M);
+
+			matxvecNM(Acopy, x, testB);
+			
+			printf("Testing solution: b = ");
+			printArray(b, N);
+			printf("Testing solution: testB = ");
+			printArray(testB, N);
+		}
 	}
 
 	printEDs(elementaryDivisors, maxED);
-
-	
-	// printf("diag: ");
-	// print2ArrayM(A, N);
-
-	// printf("P: ");
-	// print2ArrayN(P, N);
-
-	// printf("Q: ");
-	// print2ArrayM(Q, M);
-
-	// printf("Pinv: ");
-	// print2ArrayN(Pinv, N);
-	
-	// printf("Qinv: ");
-	// print2ArrayM(Qinv, M);
-}
-
-void initializeSize(int *size, char type[]) {
-	int num;
-	printf("Please enter the amount of %ss in your matrix: ", type);
-	scanf("%d", &num);
-	*size = num;
-}
-
-void initializeZero(int arr[], int len) {
-	int i;
-	for(i = 0; i < len; ++i) {
-		arr[i] = 0;
-	}
-}
-
-void initializeA(int A[][M], int Acopy[][M]) {
-	int n, m, temp, negative;
-
-	int choice;
-	printf("If you would like to manually enter a matrix of integers, press 0. If you would like have one generated randomly, press 1: ");
-	scanf("%d", &choice);
-	while (choice != 0 && choice != 1) {
-		printf("\ntry again: ");
-		scanf("%d", &choice);
-	}
-
-	if (choice == 1) {
-		for(n = 0; n < N; ++n) {
-			for(m = 0; m < M; ++m) {
-				// this transformation makes negative -1 or +1
-				negative = (rand()%2) + 1;
-				negative *= 2;
-				negative -= 3;
-
-				// temp will take on an integer on random in [-10, 10]
-				temp = (rand()%10);
-				temp *= negative;
-
-				A[n][m] = temp;
-				Acopy[n][m] = temp;
-			}
-		}
-	}
-
-	else {
-		printf("Initialize the matrix \"A\".\n");
-		for(n = 0; n < N; ++n) {
-			for(m = 0; m < M; ++m) {
-				printf("A[%d][%d] = ", n, m);
-				scanf("%d", &temp);
-				A[n][m] = temp;
-				Acopy[n][m] = temp;
-			}
-		}
-	}
-}
-
-void getDiags(int A[][M], int diags[]) {
-	int i;
-	for(i = 0; i < rank; ++i) {
-		diags[i] = A[i][i];
-	}
-}
-
-void getElementaryDivisors(int diags[], int EDs[]) {
-	int i, j;
-	int ret;
-	for (i = 0; i < rank; ++i) {
-		primeFactorize(diags[i], EDs);
-	}
-}
-
-
-
-void initializeb(int b[]) {
-	printf("Initialize the vector \"b\".\n");
-	int n, temp;
-	for(n = 0; n < N; ++n) {
-		printf("b[%d] = ", n);
-		scanf("%d", &temp);
-		b[n] = temp;
-	}
-}
-
-void calcy(int A[][M], int vec[], int y[]) {
-	int m, n = 0;
-	consistent = 1;
-	for(m = 0; m < M; ++m) {
-		if (m >= rank) {
-			y[m] = 0;
-		}
-		else {
-			if (vec[m] % A[m][m] == 0) {
-				y[m] = vec[m] / A[m][m];
-			}
-			else {
-				printf("This system is not consistent\n");
-				consistent = 0;
-				break;
-			}
-		}
-	}
 }
 
 void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[][M]) {
@@ -352,6 +249,131 @@ void leastEntryAlgo(int A[][M], int P[][N], int Pinv[][N], int Q[][M], int Qinv[
 	transposeN(Pinv);
 }
 
+void initializeSize(int *size, char type[]) {
+	int num;
+	printf("Please enter the amount of %ss in your matrix: ", type);
+	scanf("%d", &num);
+	*size = num;
+}
+
+void initializeZero(int arr[], int len) {
+	int i;
+	for(i = 0; i < len; ++i) {
+		arr[i] = 0;
+	}
+}
+
+void initializeA(int A[][M], int Acopy[][M]) {
+	int n, m, temp, negative;
+	int choiceA1;
+	printf("If you would like to manually enter a matrix of integers, press 0.\nIf you would like have one generated randomly, press 1: ");
+	scanf("%d", &choiceA1);
+	while (choiceA1 != 0 && choiceA1 != 1) {
+		printf("\ntry again: ");
+		scanf("%d", &choiceA1);
+	}
+
+	choiceA = choiceA1;
+
+	if (choiceA == 1) {
+		for(n = 0; n < N; ++n) {
+			for(m = 0; m < M; ++m) {
+				// this makes negative -1 or +1
+				negative = (rand()%2) + 1;
+				negative *= 2;
+				negative -= 3;
+
+				// temp will take on an integer on random in [-10, 10]
+				temp = (rand()%10);
+				temp *= negative;
+
+				A[n][m] = temp;
+				Acopy[n][m] = temp;
+			}
+		}
+	}
+
+	else {
+		printf("Please initialize the matrix \"A\".\n");
+		for(n = 0; n < N; ++n) {
+			for(m = 0; m < M; ++m) {
+				printf("A[%d][%d] = ", n, m);
+				scanf("%d", &temp);
+				A[n][m] = temp;
+				Acopy[n][m] = temp;
+			}
+		}
+	}
+}
+
+// puts all the diagonal elements into an array
+void getDiags(int A[][M], int diags[]) {
+	int i;
+	for(i = 0; i < rank; ++i) {
+		diags[i] = A[i][i];
+	}
+}
+
+// gets the elementary divisors using Prof. Zhou's algo
+void getElementaryDivisors(int diags[], int EDs[]) {
+	int i, j;
+	int ret;
+	for (i = 0; i < rank; ++i) {
+		primeFactorize(diags[i], EDs);
+	}
+}
+
+// prompts the user to enter a "b"
+void initializeb(int b[]) {
+	int n;
+	if (choiceA == 0) {
+		int choiceB1;
+		printf("Would you like to enter a \"b\" to solve Ax = b?\nIf so, press 1. If not, press 0: ");
+		scanf("%d", &choiceB1);
+		
+		while (choiceB1 != 0 && choiceB1 != 1) {
+			printf("\ntry again: ");
+			scanf("%d", &choiceB1);
+		}
+		choiceB = choiceB1;
+	}
+	if (choiceB == 1) {
+		printf("Please initialize the vector \"b\".\n");
+		int n, temp;
+		for(n = 0; n < N; ++n) {
+			printf("b[%d] = ", n);
+			scanf("%d", &temp);
+			b[n] = temp;
+		}
+	}
+	else {
+		for(n = 0; n < N; ++n) {
+			b[n] = 0;
+		}
+	}
+}
+
+// computes y to solve for x
+void calcy(int A[][M], int vec[], int y[]) {
+	int m, n = 0;
+	consistent = 1;
+	for(m = 0; m < M; ++m) {
+		if (m >= rank) {
+			y[m] = 0;
+		}
+		else {
+			if (vec[m] % A[m][m] == 0) {
+				y[m] = vec[m] / A[m][m];
+			}
+			else {
+				printf("This system is not consistent\n");
+				consistent = 0;
+				break;
+			}
+		}
+	}
+}
+
 //initializes P to identity
 void initializeP(int P[][N]) {
 	int i, j;
@@ -446,6 +468,7 @@ void type2rowM(int A[][M], int addTo, int addFrom, int mult) {
 void type3rowM(int A[][M], int row1, int row2) {
 	int m;
 	for(m = 0; m < M; ++m) {
+		// this swaps entries without creating a temp
 		A[row1][m] += A[row2][m];
 		A[row2][m] = A[row1][m] - A[row2][m];
 		A[row1][m] -= A[row2][m];
@@ -484,6 +507,7 @@ void type2rowN(int A[][N], int addTo, int addFrom, int mult) {
 void type3rowN(int A[][N], int row1, int row2) {
 	int n;
 	for(n = 0; n < N; ++n) {
+		// this swaps entries without creating a temp
 		A[row1][n] += A[row2][n];
 		A[row2][n] = A[row1][n] - A[row2][n];
 		A[row1][n] -= A[row2][n];
@@ -518,6 +542,7 @@ void type2col(int A[][M], int len, int addTo, int addFrom, int mult) {
 void type3col(int A[][M], int len, int col1, int col2) {
 	int i;
 	for(i = 0; i < len; ++i) {
+		// this swaps entries without creating a temp
 		A[i][col1] += A[i][col2];
 		A[i][col2] = A[i][col1] - A[i][col2];
 		A[i][col1] -= A[i][col2];
@@ -529,6 +554,7 @@ void transposeN(int A[][N]) {
 	int i, j;
 	for(i = 0; i < N; ++i) {
 		for(j = i+1; j < N; ++j) {
+			// this swaps entries without creating a temp
 			A[i][j] += A[j][i];
 			A[j][i] = A[i][j] - A[j][i];
 			A[i][j] -= A[j][i];
@@ -540,6 +566,7 @@ void transposeM(int A[][M]) {
 	int i, j;
 	for(i = 0; i < M; ++i) {
 		for(j = i+1; j < M; ++j) {
+			// this swaps entries without creating a temp
 			A[i][j] += A[j][i];
 			A[j][i] = A[i][j] - A[j][i];
 			A[i][j] -= A[j][i];
@@ -593,6 +620,7 @@ int contains(int A[], int len, int x) {
 	return ret;
 }
 
+// compares objects for sorting
 int comp(const void *pa, const void *pb) {   
 	int a = *(const int*)pa;
    	int b = *(const int*)pb;
@@ -610,15 +638,21 @@ int comp(const void *pa, const void *pb) {
 
 void printArray(int A[], int len) {
 	int i;
-	for(i = 0; i < len; ++i) {
-		if(i == 0) { printf(" (%i, ", A[i]); }
-		else if(i == len - 1) { printf("%i)\n", A[i]); }
-		else { printf("%i, ", A[i]); }
+	if (len == 1) {
+		printf("(%d)\n", A[0]);
+	}
+	else {
+		for(i = 0; i < len; ++i) {
+			if(i == 0) { printf(" (%i, ", A[i]); }
+			else if(i == len - 1) { printf("%i)\n", A[i]); }
+			else { printf("%i, ", A[i]); }
+		}
 	}
 }
 
 void printEDs(int A[], int len) {
 	int i, s;
+	// s is assigned to the number of elementary divisors
 	for(i = 0; i < len; ++i) {
 		if (A[i] != 0) {
 			s = i;
@@ -682,11 +716,6 @@ void findLeastEntry(int A[][M], int finishedRows[], int finishedColumns[], int *
 	int boole = 0;
 	*finished = 0;
 	int tempMin = -1;
-	
-	// printf("finishedRows:");
-	// printArray(finishedRows, N);
-	// printf("finishedColumns: ");
-	// printArray(finishedColumns, M);
 
 	for(n = 0; n < N; ++n) {
 		for(m = 0; m < M; ++m) {
@@ -725,6 +754,7 @@ void findLeastEntry(int A[][M], int finishedRows[], int finishedColumns[], int *
 	if (*tempM == -1 || *tempN == -1) { *finished = 1; }
 }
 
+// returns 1 if the entry divides its entire row and col; 0 otherwise
 int dividesRowAndCol(int A[][M], int tempN, int tempM) {
 	int m, n;
 	int ret = 1;
@@ -772,10 +802,10 @@ void findLeastEntry2(int A[][M], int *tempN, int *tempM, int counter) {
 	int m, n;
 	int tempMin = -1;
 	int boole = 0;
-	// if (counter >= rank) {
-	// 	return;
-	// }
-	// else {
+	if (counter >= rank) {
+		return;
+	}
+	else {
 		for(n = counter; n < N; ++n) {
 			for(m = counter; m < M; ++m) {
 				if(A[n][m] != 0) {
@@ -808,21 +838,24 @@ void findLeastEntry2(int A[][M], int *tempN, int *tempM, int counter) {
 		}
 
 		if(*tempN == -1 || *tempM == -1) { printf("tempN or tempN is equal to -1\n");}
-	// }
+	}
 }
 
+// combines all type 1 row operations into one function
 void rowOperations1(int A[][M], int P[][N], int Pinv[][N], int n, int unit) {
 	type1rowM(A, n, unit);
 	type1rowN(P, n, unit);
 	type1rowN(Pinv, n, unit);
 }
 
+// combines all type 2 row operations into one function
 void rowOperations2(int A[][M], int P[][N], int Pinv[][N], int n, int tempN, int tempMult) {
 	type2rowM(A, n, tempN, -1*tempMult);
 	type2rowN(P, n, tempN, -1*tempMult);
 	type2rowN(Pinv, tempN, n, tempMult);
 }
 
+// combines all type 3 row operations into one function
 void rowOperations3(int A[][M], int P[][N], int Pinv[][N], int row1, int row2) {
 	if (row1 != row2) {
 		// row2 < min(N, M) && row1 < min(N, M) && 
@@ -832,12 +865,14 @@ void rowOperations3(int A[][M], int P[][N], int Pinv[][N], int row1, int row2) {
 	}
 }
 
+// combines all type 2 column operations into one function
 void columnOperations2(int A[][M], int Q[][M], int Qinv[][M], int m, int tempM, int tempMult) {
 	type2col(A, N, m, tempM, -1*tempMult);
 	type2col(Q, M, m, tempM, -1*tempMult);
 	type2col(Qinv, M, tempM, m, tempMult);
 }
 
+// combines all type 2 column operations into one function
 void columnOperations3(int A[][M], int Q[][M], int Qinv[][M], int col1, int col2) {
 	if (col1 != col2) {
 		//col2 < min(N, M) && col1 < min(N, M) &&
@@ -1009,6 +1044,7 @@ void matMMxmatMM(int A[][M], int B[][M], int AB[][M]) {
 	}
 }
 
+// slight customization for Prof. Zhou's prime factorization algorithm
 void primeFactorize(int Num, int prime[]) {
 	int i, j, k;
 	int index;

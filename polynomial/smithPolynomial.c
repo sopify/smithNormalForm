@@ -75,6 +75,7 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 		finishedColumns[m] = -1;
 	}
 
+	int count = 0;
 	// begin the least entry algorithm
 	while (finished == 0) {
 
@@ -133,6 +134,19 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 		updateFinishedRows(A, finishedRows);
 		updateFinishedColumns(A, finishedColumns);
 		finished = done(finishedRows, finishedColumns, N, M);
+		++count;
+		if(count == 1000) {
+			printf("To break infinite loop, precision changed from %f to %f\n", precision, 0.01);
+			precision = 0.01;
+		}
+		if(count == 10000) {
+			printf("To break infinite loop, precision changed from %f to %f\n", precision, 0.1);
+			precision = 0.1;
+		}
+		if (count % 10000 == 0) {
+			printArray(finishedRows, N);
+			printArray(finishedColumns, M);
+		}
 	}
 
 	// now we can compute the rank
@@ -257,7 +271,7 @@ void initializeA(float A[][M][maxDegree+1], float Acopy[][M][maxDegree+1]) {
 		}
 	}
 	int choice;
-	printf("If you would like to manually enter a matrix of polynomials, press 0. If you would like have one generated randomly, press 1: ");
+	printf("If you would like to manually enter a matrix of polynomials, press 0.\nIf you would like have one generated randomly, press 1: ");
 	scanf("%d", &choice);
 	while (choice != 0 && choice != 1) {
 		printf("\nPlease enter 0 (manual) or 1 (random): ");
@@ -325,11 +339,11 @@ void init(float A[][M][maxDegree+1], float Acopy[][M][maxDegree+1], float P[][N]
 	initializeQ(QQinvTest);
 }
 
-void printAll(float A[N][M][maxDegree+1], float Acopy[N][M][maxDegree+1], 
-			  float P[N][N][maxDegree+1], float Pinv[N][N][maxDegree+1], 
-			  float Q[M][M][maxDegree+1], float Qinv[M][M][maxDegree+1], 
-			  float PAtest[N][M][maxDegree+1], float diagTest[M][N][maxDegree+1], 
-			  float PPinvTest[N][N][maxDegree+1], float QQinvTest[M][M][maxDegree+1]) {
+void printAll(float A[][M][maxDegree+1], float Acopy[][M][maxDegree+1], 
+			  float P[][N][maxDegree+1], float Pinv[][N][maxDegree+1], 
+			  float Q[][M][maxDegree+1], float Qinv[][M][maxDegree+1], 
+			  float PAtest[][M][maxDegree+1], float diagTest[][N][maxDegree+1], 
+			  float PPinvTest[][N][maxDegree+1], float QQinvTest[][M][maxDegree+1]) {
 
 	printf("diag: ");
 	print2ArrayM(A, N);
@@ -432,6 +446,7 @@ void rowOperations2(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 	type2rowM(A, n, tempN, q, 1);
 	type2rowN(P, n, tempN, q, 1);
 	type2rowN(Pinv, tempN, n, q, 0);
+	clearZeroesMat(A);
 }
 
 // shortcut for calling type 3 row operations
@@ -449,6 +464,7 @@ void columnOperations2(float A[][M][maxDegree+1], float Q[][M][maxDegree+1], flo
 	type2col(A, N, m, tempM, q, 1);
 	type2col(Q, M, m, tempM, q, 1);
 	type2col(Qinv, M, tempM, m, q, 0);
+	clearZeroesMat(A);
 }
 
 // shortcut for calling type 3 column operations
@@ -689,25 +705,14 @@ void print2ArrayN(float A[][N][maxDegree+1], int len) {
 	printf("\n");
 }
 
-// prints an array of polynomials
-void printArray(float A[][maxDegree+1], int len) {
+// prints an array of ints with length len
+void printArray(int A[], int len) {
 	int i;
 	for(i = 0; i < len; ++i) {
-		if (i == 0) { 
-			printf("(");
-			printPoly(A[i], 0);
-			printf(", "); 
-		}
-		else if (i == len - 1) {
-			printPoly(A[i], 0);
-			printf("))");
-		}
-		else {
-			printPoly(A[i], 0);
-			printf(", ");
-		}
+		if(i == 0) { printf(" (%i, ", A[i]); }
+		else if(i == len - 1) { printf("%i)\n", A[i]); }
+		else { printf("%i, ", A[i]); }
 	}
-	printf("\n");
 }
 
 // prints rows of conditions for a system of ODEs to be consistent
@@ -797,7 +802,6 @@ void subtract(float subTo[], float subFrom[]) {
 	for(i = 0; i <= maxDegree; ++i) {
 		subTo[i] -= subFrom[i];
 	}
-
 	clearZeroes(subTo);
 }
 
@@ -1139,5 +1143,14 @@ int min(int a, int b) {
 	}
 	else {
 		return b;
+	}
+}
+
+clearZeroesMat(float A[][M][maxDegree]) {
+	int m, n;
+	for(n = 0; n < N; ++n) {
+		for(m = 0; m < M; ++m) {
+			clearZeroes(A[n][m]);
+		}
 	}
 }
