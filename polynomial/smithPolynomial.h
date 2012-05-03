@@ -90,6 +90,7 @@ void updateFinishedRows(float (*)[M][maxDegree+1], int (*));
 void updateFinishedColumns(float (*)[M][maxDegree+1], int (*));
 
 void eucDiv(float (*), float (*), float (*));
+int isAboutZero(float);
 
 int getRank(float (*)[M][maxDegree+1]);
 int min(int, int);

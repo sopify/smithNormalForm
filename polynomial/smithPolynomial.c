@@ -1047,6 +1047,9 @@ void eucDiv(float a[], float b[], float q[]) {
 		return;
 	}
 
+	clearZeroes(a);
+	clearZeroes(b);
+
 	int i;
 	int degA = degree(a);
 	int degB = degree(b);
@@ -1069,7 +1072,8 @@ void eucDiv(float a[], float b[], float q[]) {
 	for (i = d; i >= 0; --i) {
 		tempQ = tempA[degA + i - d] / tempB[degB];
 		q[i] = tempQ;
-		if (tempQ != 0) {
+		// runs iff |tempQ| < 0.001
+		if (isAboutZero(tempQ) == 0) {
 			scale(tempB, tempQ);
 			polyTimesXn(tempB, i);
 			subtract(tempA, tempB);
@@ -1077,6 +1081,16 @@ void eucDiv(float a[], float b[], float q[]) {
 			scale(tempB, 1.0/tempQ);
 		}
 	}
+}
+
+int isAboutZero(float x) {
+	if (x > precision || x < -1*precision) {
+		return 0;
+	}
+	else {
+		return 1;
+	}
+
 }
 
 // finds least entry to order the diagonals properly
