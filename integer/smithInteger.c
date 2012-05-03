@@ -4,6 +4,10 @@
 
 /*
 @author: Christian Drappi
+
+This is my first time writing anything in C, so excuse me if I break conventions or
+have organized my code poorly.
+
 */
 
 main(int argc, char* argv[]) {

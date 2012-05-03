@@ -3,18 +3,31 @@
 
 /*
 @author: Christian Drappi
+
+This is my first time writing anything in C, so excuse me if I break conventions or
+have organized my code poorly.
+
 */
 
-/*	TO DO:
-	- given a matrix of differential operators, 
-	  find the constraints for a vector of 
-	  arbitrary functions that this matrix acts on
-*/
+/*  IMPORTANT NOTE: I MENTIONED PRECISION ISSUES THAT THE PROGRAM HAD IN THE README,
+	BUT I WILL EXPLAIN IN MORE DETAIL HERE:
+	-   for small matrices, or larger matrices that you'd see on a homework set,
+	the program works fine
+	-	for larger matrices, eventually some small numbers slip through my floating
+	point precision error checker (the function clearZeroes), and I cannot calibrate 
+	the error checker to correctly catch every time that floating point numbers interfere
+	with the computation. The result  of this is that the algorithm is no longer able to
+	reduce entries, and the algorithm enters an infinite loop (the main while loop in the
+	function leastEntryAlgo does not terminate). For cases like 5x5 matrices with 4th degree
+	polynomials, this can be solved by increasing the global "precision" parameter to 0.1
+	instead of 0.001, for example. For other cases, such as 10x10 matrices with 8th degree
+	polynomials, even setting the precision parameter equal to one does not catch possible errors
+	since the size of the erroreous terms aggregates quickly.
 
+	IF YOU BELIEVE THE ABOVE MENTIONED PROBLEM IS A PROBLEM WITH THE PROGRAM INSTEAD OF
+	A PROBLEM RELATED TO THE PRECISION, PLEASE LET ME KNOW ASAP AND I WILL FIX IT.
 
-/*	State as of Apr 28, 2:08am:
-	- make all polynomials monic
-	- diagonalizes
+	THANKS.
 */
 
 
@@ -75,7 +88,6 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 		finishedColumns[m] = -1;
 	}
 
-	int count = 0;
 	// begin the least entry algorithm
 	while (finished == 0) {
 
@@ -134,19 +146,6 @@ void leastEntryAlgo(float A[][M][maxDegree+1], float P[][N][maxDegree+1], float 
 		updateFinishedRows(A, finishedRows);
 		updateFinishedColumns(A, finishedColumns);
 		finished = done(finishedRows, finishedColumns, N, M);
-		++count;
-		if(count == 1000) {
-			printf("To break infinite loop, precision changed from %f to %f\n", precision, 0.01);
-			precision = 0.01;
-		}
-		if(count == 10000) {
-			printf("To break infinite loop, precision changed from %f to %f\n", precision, 0.1);
-			precision = 0.1;
-		}
-		if (count % 10000 == 0) {
-			printArray(finishedRows, N);
-			printArray(finishedColumns, M);
-		}
 	}
 
 	// now we can compute the rank
